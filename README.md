@@ -17,13 +17,13 @@ Written in Elixir and wrapping [github/hub](https://github.com/github/hub) CLI.
     - Instal via Homebrew if OSX, otherwise download binary, or clone & build
 2. Clone this repository
 
-    $ hub clone YuMatsuzawa/ex_openpr
+      $ hub clone YuMatsuzawa/ex_openpr
 
 3. Build (`mix` should be installed with Elixir)
 
-    $ cd ex_openpr
-    $ mix deps.get
-    $ mix escript.build
+      $ cd ex_openpr
+      $ mix deps.get
+      $ mix escript.build
 
 Installed binary should be `~/.mix/escripts/openpr`.
 Add `~/.mix/escripts` to your `PATH` env var (this is default escript installation path coming in Elixir 1.3).
