@@ -1,20 +1,33 @@
 # ExOpenpr
 
-**TODO: Add description**
+Simple CLI tool to open Github Pull Request.
+
+It adds your issue tracker URL in Pull Request description,
+and optionally post the resultant PR url back into your issue.
+
+Written in Elixir and wrapping [github/hub](https://github.com/github/hub) CLI.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+0. Install [Erlang](http://erlang.org/) and [Elixir](http://elixir-lang.org/)
+    - Personally recommend [asdf](https://github.com/asdf-vm/asdf) with
+    [asdf-erlang](https://github.com/asdf-vm/asdf-erlang)/[asdf-elixir](https://github.com/asdf-vm/asdf-elixir)
+    - The only actual dependency for the script is Erlang, but install Elixir for `mix`
+1. Install [github/hub](https://github.com/github/hub) CLI
+    - Instal via Homebrew if OSX, otherwise download binary, or clone & build
+2. Clone this repository
 
-  1. Add ex_openpr to your list of dependencies in `mix.exs`:
+    $ hub clone YuMatsuzawa/ex_openpr
 
-        def deps do
-          [{:ex_openpr, "~> 0.0.1"}]
-        end
+3. Build (`mix` should be installed with Elixir)
 
-  2. Ensure ex_openpr is started before your application:
+    $ cd ex_openpr
+    $ mix deps.get
+    $ mix escript.build
 
-        def application do
-          [applications: [:ex_openpr]]
-        end
+Installed binary should be `~/.mix/escripts/openpr`.
+Add `~/.mix/escripts` to your `PATH` env var (this is default escript installation path coming in Elixir 1.3).
 
+## Usage
+
+    $ openpr
