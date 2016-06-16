@@ -2,23 +2,21 @@
 
 Simple CLI tool to open Github Pull Request.
 
-It adds your issue tracker URL in Pull Request description,
-and optionally post the resultant PR url back into your issue.
+It adds your issue URL in Pull Request description,
+and open the issue with resultant Pull Request URL copied to clipboard (only available in OSX).
 
-Written in Elixir and wrapping [github/hub](https://github.com/github/hub) CLI.
+Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 
 ## Installation
 
-0. Install [Erlang](http://erlang.org/) and [Elixir](http://elixir-lang.org/)
+0. Require Git
+1. Install [Erlang](http://erlang.org/) and [Elixir](http://elixir-lang.org/)
     - Personally recommend [asdf](https://github.com/asdf-vm/asdf) with
     [asdf-erlang](https://github.com/asdf-vm/asdf-erlang)/[asdf-elixir](https://github.com/asdf-vm/asdf-elixir)
     - The only actual dependency for the script is Erlang, but install Elixir for `mix`
-1. Install [github/hub](https://github.com/github/hub) CLI
-    - Instal via Homebrew if OSX, otherwise download binary, or clone & build
-    - `hub` command must be useable from your current shell
 2. Clone this repository
   ```
-  $ hub clone YuMatsuzawa/ex_openpr
+  $ git clone https://github.com/YuMatsuzawa/ex_openpr
   ```
 
 3. Build (`mix` should be installed with Elixir)
@@ -38,29 +36,33 @@ Add `~/.mix/escripts` to your `PATH` env var (this is default escript installati
 This will do:
 
 - Push your current branch to your `origin` repository
+    - Just calling system's `git` command
 - Open Pull Request of the branch in the repository
     - Add the branch name as title
-    - If the branch name start with `<digits>_`, use the `<digits>` as an issue number,
-    and add `<your_issue_tracker_url>/<digits>` as description
+    - You can input arbitrary message as description. Without message given, `openpr` will either:
+        - add `<your_issue_tracker_url>/<digits>` as description if the branch name start with `<digits>_`
+        - put nothing. In Github, *No description provided* message will be shown
 - If OSX, `pbcopy` the resultant Pull Request URL, then `open <your_issue_tracker_url>/<digits>`
     - Using `:os.type/0` to tell if the OS is OSX, with matching against `{:unix, :darwin}`.
     Obviously this makes another distributions to be falsely recognized as OSX
     - If the issue tracker is Github issue, Pull Request auto-link should already be there
-    - Otherwise, you better post your Pull Request URL to the issue!
+    - Otherwise, it is good practice to post your Pull Request URL to the issue!
 
 ## Configuration
 
-- On the first invocation of `$ openpr`, it should ask Your issue tracker URL
-(will be used to build an issue URL. So must not end with `/`)
-- Configurations will be stored in `~/.config/openpr` as JSON format
+- On the first invocation of `$ openpr`, it should ask you:
+    - Your Github username and username
+        - Used to acquire a [personal access token](https://github.com/blog/1509-personal-api-tokens)
+        for `ex_openpr` application, with `repo` access scope
+        - You can always revoke access token via [Github web console](https://github.com/settings/tokens)
+- On the first invocation of `$ openpr` from the current git repo directory, it should ask you:
+    - Whether you want to use the default user, or different user for that repo
+    - Your issue tracker URL for the repo
+    (will be used to build an issue URL. So must not end with `/`)
+- Configurations and tokens will be stored in `~/.config/openpr` as JSON format
 - Configurations are held per local repository
-- For `hub` command, you need to configure it by yourself:
-    - On first invocation of `hub`, it should ask your Github username and password
-    - It authenticate you to Github, then put your oauth token in `~/.config/hub`
-    - Due to the fact that `hub` cannot use multiple identities,
-    Pull Requests are always opened on behalf of the authenticated user above,
-    regardless of repository owner or latest committer of branch, etc.
-        - So the command will fail if the `hub` user does not have privilege to see the repository
+    - So **you can use different identities per repository**
+    - This is a clear advantage over `hub`!
 
 ## Features
 
