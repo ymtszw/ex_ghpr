@@ -1,10 +1,10 @@
 use Croma
 
-defmodule ExOpenpr.CLI do
+defmodule ExGHPR.CLI do
   alias Croma.Result, as: R
-  alias ExOpenpr.{Config, Github}
-  alias ExOpenpr.GlobalConfig, as: GConf
-  alias ExOpenpr.LocalConfig, as: LConf
+  alias ExGHPR.{Config, Github}
+  alias ExGHPR.GlobalConfig, as: GConf
+  alias ExGHPR.LocalConfig, as: LConf
 
   def main(argv) do
     {opts, _args, _err} = OptionParser.parse(argv,
@@ -45,7 +45,7 @@ defmodule ExOpenpr.CLI do
             body = calc_body(current_branch, lconf)
             case Github.create_pull_request(url, u_n, t, current_branch, current_branch, "master", body) do
               {:ok   , html_url     } -> IO.puts(html_url)
-              {:error, :unauthorized} -> exit("Unauthorized. Try `$ openpr --configure local`")
+              {:error, :unauthorized} -> exit("Unauthorized. Try `$ #{Config.cmd_name} --configure local`")
               {:error, reason       } -> IO.inspect(reason)
             end
         end

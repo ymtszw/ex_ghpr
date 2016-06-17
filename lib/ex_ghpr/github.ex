@@ -1,9 +1,9 @@
 use Croma
 
-defmodule ExOpenpr.Github do
+defmodule ExGHPR.Github do
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
-  alias ExOpenpr.LocalGitRepositoryPath, as: LPath
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @github_api_host "https://api.github.com"
   @origin_url_pattern ~r|/(?<owner_repo>[^/]+/[^/]+)\.git|
@@ -34,7 +34,7 @@ defmodule ExOpenpr.Github do
     {:ok, hostname} = :inet.gethostname
     body = %{
       scopes: "repo",
-      note:   "#{ExOpenpr.Config.cmd_name} for #{username}@#{hostname}"
+      note:   "#{ExGHPR.Config.cmd_name} for #{username}@#{hostname}"
     }
     headers = %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{password}")}",

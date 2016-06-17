@@ -1,7 +1,7 @@
 use Croma
 
-defmodule ExOpenpr.GlobalConfig do
-  alias ExOpenpr.{Config, Github}
+defmodule ExGHPR.GlobalConfig do
+  alias ExGHPR.{Config, Github}
   use Croma.Struct, fields: [
     username: Croma.String,
     token:    Croma.String,
@@ -13,9 +13,9 @@ defmodule ExOpenpr.GlobalConfig do
   end
 end
 
-defmodule ExOpenpr.LocalConfig do
-  alias ExOpenpr.{Config, Github}
-  alias ExOpenpr.LocalGitRepositoryPath, as: LPath
+defmodule ExGHPR.LocalConfig do
+  alias ExGHPR.{Config, Github}
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
   use Croma.Struct, fields: [
     origin_pr_url: Croma.String,
     username:      Croma.TypeGen.nilable(Croma.String),
@@ -62,7 +62,7 @@ defmodule ExOpenpr.LocalConfig do
   end
 end
 
-defmodule ExOpenpr.LocalGitRepositoryPath do
+defmodule ExGHPR.LocalGitRepositoryPath do
   @type t :: Path.t
 
   defun validate(term :: term) :: Croma.Result.t(t) do
@@ -74,11 +74,11 @@ defmodule ExOpenpr.LocalGitRepositoryPath do
   end
 end
 
-defmodule ExOpenpr.Config do
+defmodule ExGHPR.Config do
   alias Croma.Result, as: R
-  alias ExOpenpr.GlobalConfig, as: GConf
-  alias ExOpenpr.LocalConfig, as: LConf
-  alias ExOpenpr.LocalGitRepositoryPath, as: LPath
+  alias ExGHPR.GlobalConfig, as: GConf
+  alias ExGHPR.LocalConfig, as: LConf
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @cmd_name    Mix.Project.config[:escript][:name]
   @cmd_version Mix.Project.config[:version]
