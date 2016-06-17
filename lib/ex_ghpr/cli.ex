@@ -19,7 +19,9 @@ defmodule ExGHPR.CLI do
     {opts, args0, _err} = OptionParser.parse(argv,
       aliases: [
         v: :version,
-      ] ++ Enum.map(@string_options, fn atom ->
+      ] ++ Enum.filter_map(@string_options,
+      fn atom -> atom != :fork end,
+      fn atom ->
         {Atom.to_string(atom) |> String.at(0) |> String.to_atom, atom}
       end)
     )
