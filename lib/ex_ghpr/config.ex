@@ -86,8 +86,10 @@ defmodule ExGHPR.Config do
 
   defun init :: R.t(map) do
     IO.puts "#{cmd_name} - #{cmd_version}"
-    {:ok, _conf} = GConf.init
-    LConf.init(File.cwd!)
+    GConf.init
+    |> R.map(fn conf ->
+      init_lconf_or_nil(File.cwd!) || conf
+    end)
   end
 
   defun load :: R.t(map) do
@@ -99,7 +101,14 @@ defmodule ExGHPR.Config do
     case load do
       {:error, _}                -> init |> R.get
       {:ok, %{^cwd => _} = conf} -> conf
-      {:ok, _conf}               -> LConf.init(cwd) |> R.get
+      {:ok, conf}                -> init_lconf_or_nil(cwd) || conf
+    end
+  end
+
+  defunp init_lconf_or_nil(cwd) :: nil | map do
+    case LPath.validate(cwd) do
+      {:ok, repo} -> LConf.init(repo) |> R.get
+      {:error, _} -> nil
     end
   end
 
