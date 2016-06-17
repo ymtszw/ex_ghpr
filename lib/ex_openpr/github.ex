@@ -38,14 +38,14 @@ defmodule ExOpenpr.Github do
     }
     headers = %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{password}")}",
-      "content-type"  => "application/json"
+      "content-type"  => "application/json",
     }
-    case HTTPoison.post!("#{@github_api_host}/authorizations", Poison.encode!(body), headers) do
-      %Res{status_code: 401}                 -> {:error, :unauthorized}
-      %Res{status_code: 201, body: raw_body} ->
+    case HTTPoison.post("#{@github_api_host}/authorizations", Poison.encode!(body), headers) do
+      {:ok, %Res{status_code: 201, body: raw_body}} ->
         Poison.decode(raw_body)
         |> R.map(fn body -> body["token"] end)
-      %Res{status_code: c, body: raw_body}   -> {:error, [status_code: c, body: Poison.decode!(raw_body)]}
+      {:ok, %Res{status_code: 401}                } -> {:error, :unauthorized}
+      {:ok, %Res{status_code: c, body: raw_body}  } -> {:error, [status_code: c, body: Poison.decode!(raw_body)]}
     end
   end
 
@@ -56,6 +56,30 @@ defmodule ExOpenpr.Github do
         %{"owner_repo" => o_r} = Regex.named_captures(@origin_url_pattern, raw_origin_url)
         {:ok, "#{@github_api_host}/repos/#{o_r}/pulls"}
       e                     -> e
+    end
+  end
+
+  @doc """
+  Returns `Croma.Result.t(html_url)` where `html_url` is resultant PR link `String`.
+  """
+  defun create_pull_request(pr_url   :: v[String.t],
+                            username :: v[String.t],
+                            token    :: v[String.t],
+                            title    :: v[String.t],
+                            head     :: v[String.t],
+                            base     :: v[String.t] \\ "master",
+                            body     :: v[String.t] \\ "") :: R.t(String.t) do
+    body = %{title: title, head: head, base: base, body: body}
+    headers = %{
+      "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
+      "content-type"  => "application/json",
+    }
+    case HTTPoison.post(pr_url, Poison.encode!(body), headers) do
+      {:ok, %Res{status_code: 201, body: raw_body}} ->
+        Poison.decode(raw_body)
+        |> R.map(fn body -> body["html_url"] end)
+      {:ok, %Res{status_code: 401}                } -> {:error, :unauthorized}
+      {:ok, %Res{status_code: c, body: raw_body}  } -> {:error, [status_code: c, body: Poison.decode!(raw_body)]}
     end
   end
 end
