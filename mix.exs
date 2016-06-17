@@ -31,10 +31,11 @@ defmodule ExGHPR.Mixfile do
 
   defp deps do
     [
-      {:git_cli,   "~> 0.2"},
-      {:poison,    "~> 2.0"},
-      {:httpoison, "~> 0.8"},
-      {:croma,     "~> 0.4"},
+      {:git_cli,        "~> 0.2"              },
+      {:poison,         "~> 2.0"              },
+      {:httpoison,      "~> 0.8"              },
+      {:croma,          "~> 0.4"              },
+      {:mix_test_watch, "~> 0.2", [only: :dev]},
     ]
   end
 end

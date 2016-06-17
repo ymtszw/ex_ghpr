@@ -7,7 +7,7 @@ defmodule ExGHPR.CLI do
   alias ExGHPR.LocalConfig, as: LConf
 
   def main(argv) do
-    {opts, args, _err} = OptionParser.parse(argv,
+    {opts, args0, _err} = OptionParser.parse(argv,
       strict: [
         version:   :boolean,
         configure: :string,
@@ -29,9 +29,12 @@ defmodule ExGHPR.CLI do
     cond do
       opts[:version]         -> IO.puts("#{Config.cmd_name} - #{Config.cmd_version}")
       c = opts[:configure]   -> configure_ghpr(c)
-      ["create" | tl] = args -> create_ghpr(opts, tl)
-      ["search" | tl] = args -> search_ghpr(opts, tl)
-      true                   -> create_ghpr(opts, args)
+      true                   ->
+        case args0 do
+          ["create" | tl] -> create_ghpr(opts, tl)
+          ["search" | tl] -> search_ghpr(opts, tl)
+          args1           -> create_ghpr(opts, args1)
+        end
     end
   end
 
@@ -54,7 +57,7 @@ defmodule ExGHPR.CLI do
           {:ok, name    } -> String.rstrip(name, ?\n)
         end
         # {:ok, _} = Git.push(current_repo, ["--set-upstream", "origin", current_branch])
-        url = Github.pull_request_api_url(cwd, opts[:remote])
+        {:ok, url} = Github.pull_request_api_url(cwd, opts[:remote])
         {u_n, t} = case {lconf["username"], lconf["token"]} do
           {nil, _} -> {gconf["username"], gconf["token"]}
           creds    -> creds
