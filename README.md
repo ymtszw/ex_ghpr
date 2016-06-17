@@ -7,9 +7,9 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 ## Features
 
 - Open Pull Request
-    - It adds your issue URL in Pull Request description,
-    and open the issue with resultant Pull Request URL copied to clipboard
-    - You can configure issue tracker URL and user **per repository**
+    - Automatically push, put title, write issue URL in description
+    - Also, copy resultant Pull Request URL to clipboard, open issue URL in browser
+    - You can configure issue tracker URL and identities **per repository**
         - This is my original intension for this tool over `hub`!
 - Search Pull Requests related to a SHA hash (NYI)
 - Help welcomed!! Especially:
