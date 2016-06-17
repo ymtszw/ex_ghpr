@@ -55,12 +55,15 @@ defmodule ExGHPR.CLI do
           {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
           {:ok, name    } -> String.rstrip(name, ?\n)
         end
-        # {:ok, _} = Git.push(current_repo, ["--set-upstream", "origin", current_branch])
-        {:ok, url} = Github.pull_request_api_url(cwd, validate_remote(opts[:remote], "origin"))
         {u_n, t} = case {lconf["username"], lconf["token"]} do
           {nil, _} -> {gconf["username"], gconf["token"]}
           creds    -> creds
         end
+        case ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t) do
+          {:error, error} -> exit_with_error(inspect(error))
+          {:ok   , _    } -> :ok
+        end
+        {:ok, url} = Github.pull_request_api_url(cwd, validate_remote(opts[:remote], "origin"))
         title = validate_title(opts[:title], current_branch)
         head = case validate_fork(opts[:fork]) do
           nil  -> current_branch
@@ -85,6 +88,22 @@ defmodule ExGHPR.CLI do
       {:ok, %{^cwd => _} = conf} -> conf
       {:ok, _conf}               -> LConf.init(cwd) |> R.get
     end
+  end
+
+  defunp ensure_current_branch_pushed_to_origin(%Git.Repository{} = repo,
+                                                current_branch :: v[String.t],
+                                                username       :: v[String.t],
+                                                token          :: v[String.t]) :: R.t(term) do
+    origin_url = case Git.remote(repo, ["get-url", "origin"]) do
+      {:error, _} -> exit_with_error("Cannot find `origin` remote")
+      {:ok, url } -> url
+    end
+    origin_url_with_auth = case URI.parse(origin_url) do
+      %{scheme: "https", host: "github.com", path: path} ->
+        "https://#{username}:#{token}@github.com#{path}" # Yes, this way you can push without entering password
+      _ssh_url -> origin_url
+    end
+    Git.push(repo, ["--set-upstream", origin_url_with_auth, current_branch])
   end
 
   defp   calc_body(_branch_name, %{"tracker_url" => nil}), do: ""
