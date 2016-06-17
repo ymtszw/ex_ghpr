@@ -19,7 +19,7 @@ defmodule ExGHPR.CLI.Create do
     origin_url_with_auth = case URI.parse(origin_url) do
       %URI{scheme: "https", host: "github.com", path: path} ->
         "https://#{username}:#{token}@github.com#{String.rstrip(path, ?\n)}" # Yes, this way you can push without entering password
-      _ssh_url -> origin_url
+      _ssh_url -> String.rstrip(origin_url, ?\n)
     end
     Git.push(repo, [origin_url_with_auth, current_branch])
   end
