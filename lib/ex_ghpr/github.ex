@@ -3,7 +3,6 @@ use Croma
 defmodule ExGHPR.Github do
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
-  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @github_api_host "https://api.github.com"
   @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
@@ -49,14 +48,12 @@ defmodule ExGHPR.Github do
     end
   end
 
-  defun pull_request_api_url(cwd :: v[LPath.t], remote :: v[String.t]) :: R.t(String.t) do
-    repo = %Git.Repository{path: cwd}
-    case Git.remote(repo, ["get-url", remote]) do
-      {:ok, remote_url} ->
-        %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url)
-        {:ok, "#{@github_api_host}/repos/#{o_r}/pulls"}
-      e                 -> e
-    end
+  defun pull_request_api_url(%Git.Repository{} = repo, remote :: v[String.t]) :: R.t(String.t) do
+    Git.remote(repo, ["get-url", remote])
+    |> R.map(fn remote_url ->
+      %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url) # Should rarely fail
+      "#{@github_api_host}/repos/#{o_r}/pulls"
+    end)
   end
 
   @doc """
@@ -70,16 +67,39 @@ defmodule ExGHPR.Github do
                             base     :: v[String.t],
                             body     :: v[String.t]) :: R.t(String.t) do
     body = %{title: title, head: head, base: base, body: body}
-    headers = %{
+    headers = auth_json_headers(username, token)
+    case HTTPoison.post(pr_url, Poison.encode!(body), headers) do
+      {:ok, %Res{status_code: 201, body: body}} ->
+        Poison.decode(body)
+        |> R.map(fn pr -> pr["html_url"] end)
+      {:ok, %Res{status_code: c, body: body}  } -> {:error, [status_code: c, body: Poison.decode!(body)]}
+    end
+  end
+
+  @doc """
+  Check existence of Pull Request for `base` from `head`.
+  Returns `Croma.Result` of URL if exist, otherwise `nil`
+  """
+  defun existing_pull_request(pr_url   :: v[String.t],
+                              username :: v[String.t],
+                              token    :: v[String.t],
+                              head     :: v[String.t],
+                              base     :: v[String.t]) :: R.t(nil | String.t) do
+    params = [params: [state: "open", head: head, base: base]]
+    headers = auth_json_headers(username, token)
+    case HTTPoison.get(pr_url, headers, params) do
+      {:ok, %Res{status_code: 200, body: "[]"}} -> {:ok, nil}
+      {:ok, %Res{status_code: 200, body: list}} ->
+        Poison.decode(list)
+        |> R.map(fn [hd | _] -> hd["html_url"] end)
+      {:ok, %Res{status_code: c, body: body}  } -> {:error, [status_code: c, body: Poison.decode!(body)]}
+    end
+  end
+
+  defp auth_json_headers(username, token) do
+    %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
       "content-type"  => "application/json",
     }
-    case HTTPoison.post(pr_url, Poison.encode!(body), headers) do
-      {:ok, %Res{status_code: 201, body: raw_body}} ->
-        Poison.decode(raw_body)
-        |> R.map(fn body -> body["html_url"] end)
-      {:ok, %Res{status_code: 401}                } -> {:error, :unauthorized}
-      {:ok, %Res{status_code: c, body: raw_body}  } -> {:error, [status_code: c, body: Poison.decode!(raw_body)]}
-    end
   end
 end

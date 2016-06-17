@@ -19,7 +19,9 @@ defmodule ExGHPR.CLI do
     {opts, args0, _err} = OptionParser.parse(argv,
       aliases: [
         v: :version,
-      ] ++ Enum.map(@string_options, fn atom ->
+      ] ++ Enum.filter_map(@string_options,
+      fn atom -> atom != :fork end,
+      fn atom ->
         {Atom.to_string(atom) |> String.at(0) |> String.to_atom, atom}
       end)
     )
@@ -48,29 +50,72 @@ defmodule ExGHPR.CLI do
     case current_conf[cwd] do
       nil   -> exit_with_error("Not a git repository")
       lconf ->
-        current_repo = %Git.Repository{path: cwd}
-        current_branch = case Git.rev_parse(current_repo, ~w(--abbrev-ref HEAD)) do
-          {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
-          {:ok, name    } -> String.rstrip(name, ?\n)
-        end
-        # {:ok, _} = Git.push(current_repo, ["--set-upstream", "origin", current_branch])
-        {:ok, url} = Github.pull_request_api_url(cwd, validate_remote(opts[:remote], "origin"))
-        {u_n, t} = case {lconf["username"], lconf["token"]} do
-          {nil, _} -> {gconf["username"], gconf["token"]}
-          creds    -> creds
-        end
-        title = validate_title(opts[:title], current_branch)
-        head = case validate_fork(opts[:fork]) do
-          nil  -> current_branch
-          fork -> "#{fork}:#{current_branch}"
-        end
-        body = validate_message(opts[:message], calc_body(current_branch, lconf))
-        case Github.create_pull_request(url, u_n, t, title, head, validate_base(opts[:base], "master"), body) do
-          {:ok   , html_url     } -> IO.puts(html_url)
-          {:error, :unauthorized} -> exit_with_error("Unauthorized. Try `$ #{Config.cmd_name} --configure local`")
-          {:error, reason       } -> IO.inspect(reason)
-        end
+        current_repo   = %Git.Repository{path: cwd}
+        current_branch = fetch_current_branch(current_repo)
+        {u_n, t}       = fetch_credentials(lconf, gconf)
+        ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
+        |> R.map_error(&exit_with_error(inspect(&1)))
+        ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
+        |> R.map_error(&exit_with_error(inspect(&1)))
+        |> R.get
+        |> IO.puts
     end
+  end
+
+  defunp fetch_current_branch(%Git.Repository{} = repo) :: String.t do
+    case Git.rev_parse(repo, ~w(--abbrev-ref HEAD)) do
+      {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
+      {:ok, name    } -> String.rstrip(name, ?\n)
+    end
+  end
+
+  defunp fetch_credentials(%{"username" => lun, "token" => lt}, %{"username" => gun, "token" => gt}) :: {String.t, String.t} do
+    case {lun, lt} do
+      {nil, _} -> {gun, gt}
+      creds    -> creds
+    end
+  end
+
+  defunp ensure_current_branch_pushed_to_origin(
+      %Git.Repository{} = repo,
+      current_branch :: v[String.t],
+      username       :: v[String.t],
+      token          :: v[String.t]) :: R.t(term) do
+    origin_url = case Git.remote(repo, ["get-url", "origin"]) do
+      {:error, _  } -> exit_with_error("Cannot find `origin` remote")
+      {:ok   , url} -> url
+    end
+    origin_url_with_auth = case URI.parse(origin_url) do
+      %URI{scheme: "https", host: "github.com", path: path} ->
+        "https://#{username}:#{token}@github.com#{String.rstrip(path, ?\n)}" # Yes, this way you can push without entering password
+      _ssh_url -> origin_url
+    end
+    Git.push(repo, [origin_url_with_auth, current_branch])
+  end
+
+  defunp ensure_pull_requested(
+      opts           :: Keyword.t,
+      %Git.Repository{} = repo,
+      current_branch :: v[String.t],
+      username       :: v[String.t],
+      token          :: v[String.t],
+      tracker_url    :: nil | String.t) :: R.t(term) do
+    api_url = Github.pull_request_api_url(repo, validate_remote(opts[:remote], "origin"))
+    |> R.map_error(&exit_with_error(inspect(&1)))
+    |> R.get
+    head = case validate_fork(opts[:fork]) do
+      nil  -> current_branch
+      fork -> "#{fork}:#{current_branch}"
+    end
+    base = validate_base(opts[:base], "master")
+    Github.existing_pull_request(api_url, username, token, head, base)
+    |> R.bind(fn
+      nil ->
+        title = validate_title(opts[:title], current_branch)
+        body = validate_message(opts[:message], calc_body(current_branch, tracker_url))
+        Github.create_pull_request(api_url, username, token, title, head, base, body)
+      url -> {:ok, url}
+    end)
   end
 
   defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
@@ -85,10 +130,10 @@ defmodule ExGHPR.CLI do
     end
   end
 
-  defp   calc_body(_branch_name, %{"tracker_url" => nil}), do: ""
-  defunp calc_body(branch_name :: v[String.t], %{"tracker_url" => t_u}) :: String.t do
+  defp   calc_body(_branch_name, nil), do: ""
+  defunp calc_body(branch_name :: v[String.t], tracker_url) :: String.t do
     case Regex.named_captures(~r/\A(?<issue_num>\d+)_/, branch_name) do
-      %{"issue_num" => num} -> "#{t_u}/#{num}"
+      %{"issue_num" => num} -> "#{tracker_url}/#{num}"
       _                     -> ""
     end
   end
