@@ -52,7 +52,7 @@ defmodule ExGHPR.CLI.Create do
   defp   calc_body(_branch_name, nil), do: ""
   defunp calc_body(branch_name :: v[String.t], tracker_url) :: String.t do
     case Regex.named_captures(~r/\A(?<issue_num>\d+)_/, branch_name) do
-      %{"issue_num" => num} -> "#{tracker_url}/#{num}"
+      %{"issue_num" => num} -> open_issue_url("#{tracker_url}/#{num}")
       _                     -> ""
     end
   end

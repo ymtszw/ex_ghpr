@@ -24,6 +24,15 @@ defmodule ExGHPR.Util do
     |> IO.puts
   end
 
+  def   open_issue_url(""), do: ""
+  defun open_issue_url(url :: v[String.t]) :: String.t do
+    open_cmd =
+      System.find_executable("open") ||                 # OSX
+      (System.find_executable("cmd") && "cmd /c start") # Windows
+    if open_cmd, do: :os.cmd('#{open_cmd} #{url}')
+    url
+  end
+
   defun copy_to_clipboard_and_echo(str :: v[String.t]) :: :ok do
     clip_cmd =
       System.find_executable("pbcopy") || # OSX
