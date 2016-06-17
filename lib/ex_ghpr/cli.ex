@@ -57,7 +57,7 @@ defmodule ExGHPR.CLI do
           {:ok, name    } -> String.rstrip(name, ?\n)
         end
         # {:ok, _} = Git.push(current_repo, ["--set-upstream", "origin", current_branch])
-        {:ok, url} = Github.pull_request_api_url(cwd, opts[:remote])
+        {:ok, url} = Github.pull_request_api_url(cwd, opts[:remote] || "origin")
         {u_n, t} = case {lconf["username"], lconf["token"]} do
           {nil, _} -> {gconf["username"], gconf["token"]}
           creds    -> creds
@@ -68,7 +68,7 @@ defmodule ExGHPR.CLI do
           fork -> "#{fork}:#{current_branch}"
         end
         body = opts[:message] || calc_body(current_branch, lconf)
-        case Github.create_pull_request(url, u_n, t, title, head, opts[:base], body) do
+        case Github.create_pull_request(url, u_n, t, title, head, opts[:base] || "master", body) do
           {:ok   , html_url     } -> IO.puts(html_url)
           {:error, :unauthorized} -> exit("Unauthorized. Try `$ #{Config.cmd_name} --configure local`")
           {:error, reason       } -> IO.inspect(reason)
@@ -88,7 +88,7 @@ defmodule ExGHPR.CLI do
     end
   end
 
-  defp   calc_body(_branch_name, %{"tracker_url" => nil}), do: nil
+  defp   calc_body(_branch_name, %{"tracker_url" => nil}), do: ""
   defunp calc_body(branch_name :: v[String.t], %{"tracker_url" => t_u}) :: String.t do
     case Regex.named_captures(~r/\A(?<issue_num>\d+)_/, branch_name) do
       %{"issue_num" => num} -> "#{t_u}/#{num}"

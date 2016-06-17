@@ -49,7 +49,7 @@ defmodule ExGHPR.Github do
     end
   end
 
-  defun pull_request_api_url(cwd :: v[LPath.t], remote :: String.t \\ "origin") :: R.t(String.t) do
+  defun pull_request_api_url(cwd :: v[LPath.t], remote :: v[String.t]) :: R.t(String.t) do
     repo = %Git.Repository{path: cwd}
     case Git.remote(repo, ["get-url", remote]) do
       {:ok, remote_url} ->
@@ -67,8 +67,8 @@ defmodule ExGHPR.Github do
                             token    :: v[String.t],
                             title    :: v[String.t],
                             head     :: v[String.t],
-                            base     :: v[String.t] \\ "master",
-                            body     :: v[String.t] \\ "") :: R.t(String.t) do
+                            base     :: v[String.t],
+                            body     :: v[String.t]) :: R.t(String.t) do
     body = %{title: title, head: head, base: base, body: body}
     headers = %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
