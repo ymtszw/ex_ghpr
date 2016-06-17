@@ -49,59 +49,30 @@ defmodule ExGHPR.CLI do
     gconf = current_conf["global"]
     case current_conf[cwd] do
       nil   -> exit_with_error("Not a git repository")
-      lconf -> ensure_branch_pushed_and_pull_requested(cwd, opts, lconf, gconf)
+      lconf ->
+        current_repo   = %Git.Repository{path: cwd}
+        current_branch = fetch_current_branch(current_repo)
+        {u_n, t}       = fetch_credentials(lconf, gconf)
+        ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
+        |> R.map_error(&exit_with_error(inspect(&1)))
+        ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
+        |> R.map_error(&exit_with_error(inspect(&1)))
+        |> R.get
+        |> IO.puts
     end
   end
 
-  defunp ensure_branch_pushed_and_pull_requested(
-      cwd  :: Path.t,
-      opts :: Keyword.t,
-      %{"username" => lun, "token" => lt, "tracker_url" => tu},
-      %{"username" => gun, "token" => gt}) :: :ok do
-    current_repo = %Git.Repository{path: cwd}
-    current_branch = case Git.rev_parse(current_repo, ~w(--abbrev-ref HEAD)) do
+  defunp fetch_current_branch(%Git.Repository{} = repo) :: String.t do
+    case Git.rev_parse(repo, ~w(--abbrev-ref HEAD)) do
       {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
       {:ok, name    } -> String.rstrip(name, ?\n)
     end
-    {u_n, t} = case {lun, lt} do
+  end
+
+  defunp fetch_credentials(%{"username" => lun, "token" => lt}, %{"username" => gun, "token" => gt}) :: {String.t, String.t} do
+    case {lun, lt} do
       {nil, _} -> {gun, gt}
       creds    -> creds
-    end
-    ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
-    |> R.map_error(&exit_with_error(inspect(&1)))
-    |> R.map(&IO.puts/1)
-    api_url = Github.pull_request_api_url(cwd, validate_remote(opts[:remote], "origin"))
-    |> R.map_error(&exit_with_error(inspect(&1)))
-    |> R.get
-    head = case validate_fork(opts[:fork]) do
-      nil  -> current_branch
-      fork -> "#{fork}:#{current_branch}"
-    end
-    base = validate_base(opts[:base], "master")
-    html_url =
-      Github.existing_pull_request(api_url, u_n, t, head, base)
-      |> R.bind(fn
-        nil ->
-          title = validate_title(opts[:title], current_branch)
-          body = validate_message(opts[:message], calc_body(current_branch, tu))
-          IO.puts(api_url)
-          Github.create_pull_request(api_url, u_n, t, title, head, base, body)
-        url -> {:ok, url}
-      end)
-      |> R.map_error(fn reason -> exit_with_error(inspect(reason)) end)
-      |> R.get
-    IO.puts(html_url)
-  end
-
-  defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
-    exit("NYI")
-  end
-
-  defunp load_conf(cwd :: Path.t) :: map do
-    case Config.load do
-      {:error, _}                -> Config.init |> R.get
-      {:ok, %{^cwd => _} = conf} -> conf
-      {:ok, _conf}               -> LConf.init(cwd) |> R.get
     end
   end
 
@@ -120,6 +91,43 @@ defmodule ExGHPR.CLI do
       _ssh_url -> origin_url
     end
     Git.push(repo, [origin_url_with_auth, current_branch])
+  end
+
+  defunp ensure_pull_requested(
+      opts           :: Keyword.t,
+      %Git.Repository{} = repo,
+      current_branch :: v[String.t],
+      username       :: v[String.t],
+      token          :: v[String.t],
+      tracker_url    :: nil | String.t) :: R.t(term) do
+    api_url = Github.pull_request_api_url(repo, validate_remote(opts[:remote], "origin"))
+    |> R.map_error(&exit_with_error(inspect(&1)))
+    |> R.get
+    head = case validate_fork(opts[:fork]) do
+      nil  -> current_branch
+      fork -> "#{fork}:#{current_branch}"
+    end
+    base = validate_base(opts[:base], "master")
+    Github.existing_pull_request(api_url, username, token, head, base)
+    |> R.bind(fn
+      nil ->
+        title = validate_title(opts[:title], current_branch)
+        body = validate_message(opts[:message], calc_body(current_branch, tracker_url))
+        Github.create_pull_request(api_url, username, token, title, head, base, body)
+      url -> {:ok, url}
+    end)
+  end
+
+  defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
+    exit("NYI")
+  end
+
+  defunp load_conf(cwd :: Path.t) :: map do
+    case Config.load do
+      {:error, _}                -> Config.init |> R.get
+      {:ok, %{^cwd => _} = conf} -> conf
+      {:ok, _conf}               -> LConf.init(cwd) |> R.get
+    end
   end
 
   defp   calc_body(_branch_name, nil), do: ""

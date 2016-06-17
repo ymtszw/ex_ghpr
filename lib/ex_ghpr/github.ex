@@ -3,7 +3,6 @@ use Croma
 defmodule ExGHPR.Github do
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
-  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @github_api_host "https://api.github.com"
   @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
@@ -49,8 +48,7 @@ defmodule ExGHPR.Github do
     end
   end
 
-  defun pull_request_api_url(cwd :: v[LPath.t], remote :: v[String.t]) :: R.t(String.t) do
-    repo = %Git.Repository{path: cwd}
+  defun pull_request_api_url(%Git.Repository{} = repo, remote :: v[String.t]) :: R.t(String.t) do
     Git.remote(repo, ["get-url", remote])
     |> R.map(fn remote_url ->
       %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url) # Should rarely fail
