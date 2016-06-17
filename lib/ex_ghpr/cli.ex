@@ -2,6 +2,7 @@ use Croma
 
 defmodule ExGHPR.CLI do
   alias Croma.Result, as: R
+  import ExGHPR.Util
   alias ExGHPR.{Config, Github}
   alias ExGHPR.GlobalConfig, as: GConf
   alias ExGHPR.LocalConfig, as: LConf
@@ -45,16 +46,17 @@ defmodule ExGHPR.CLI do
 
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
     cwd = File.cwd!
-    current_conf = load_conf(cwd)
-    gconf = current_conf["global"]
+    current_conf = Config.ensure_cwd(cwd)
     case current_conf[cwd] do
       nil   -> exit_with_error("Not a git repository")
       lconf ->
         current_repo   = %Git.Repository{path: cwd}
         current_branch = fetch_current_branch(current_repo)
-        {u_n, t}       = fetch_credentials(lconf, gconf)
+        {u_n, t}       = choose_credentials(lconf, current_conf["global"])
         ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
         |> R.map_error(&exit_with_error(inspect(&1)))
+        |> R.get
+        |> puts_last_line
         ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
         |> R.map_error(&exit_with_error(inspect(&1)))
         |> R.get
@@ -69,7 +71,7 @@ defmodule ExGHPR.CLI do
     end
   end
 
-  defunp fetch_credentials(%{"username" => lun, "token" => lt}, %{"username" => gun, "token" => gt}) :: {String.t, String.t} do
+  defunp choose_credentials(%{"username" => lun, "token" => lt}, %{"username" => gun, "token" => gt}) :: {String.t, String.t} do
     case {lun, lt} do
       {nil, _} -> {gun, gt}
       creds    -> creds
@@ -120,14 +122,6 @@ defmodule ExGHPR.CLI do
 
   defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
     exit("NYI")
-  end
-
-  defunp load_conf(cwd :: Path.t) :: map do
-    case Config.load do
-      {:error, _}                -> Config.init |> R.get
-      {:ok, %{^cwd => _} = conf} -> conf
-      {:ok, _conf}               -> LConf.init(cwd) |> R.get
-    end
   end
 
   defp   calc_body(_branch_name, nil), do: ""
