@@ -6,7 +6,7 @@ defmodule ExGHPR.Github do
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @github_api_host "https://api.github.com"
-  @origin_url_pattern ~r|/(?<owner_repo>[^/]+/[^/]+)\.git|
+  @remote_url_pattern ~r|/(?<owner_repo>[^/]+/[^/]+)\.git|
 
   @doc """
   Try authenticate to Github. Prompts for username and password. On success, returns `{username, token}`,
@@ -49,13 +49,13 @@ defmodule ExGHPR.Github do
     end
   end
 
-  defun origin_pr_url(cwd :: v[LPath.t]) :: R.t(String.t) do
+  defun pull_request_api_url(cwd :: v[LPath.t], remote :: v[String.t] \\ "origin") :: R.t(String.t) do
     repo = %Git.Repository{path: cwd}
-    case Git.remote(repo, ~w(get-url --push origin)) do
-      {:ok, raw_origin_url} ->
-        %{"owner_repo" => o_r} = Regex.named_captures(@origin_url_pattern, raw_origin_url)
+    case Git.remote(repo, ["get-url", "--fetch", remote]) do # Use Fetch URL since `remote` can be upstream where the user cannot push
+      {:ok, remote_url} ->
+        %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url)
         {:ok, "#{@github_api_host}/repos/#{o_r}/pulls"}
-      e                     -> e
+      e                 -> e
     end
   end
 

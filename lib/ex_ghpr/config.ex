@@ -17,10 +17,9 @@ defmodule ExGHPR.LocalConfig do
   alias ExGHPR.{Config, Github}
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
   use Croma.Struct, fields: [
-    origin_pr_url: Croma.String,
-    username:      Croma.TypeGen.nilable(Croma.String),
-    token:         Croma.TypeGen.nilable(Croma.String),
-    tracker_url:   Croma.TypeGen.nilable(Croma.String),
+    username:    Croma.TypeGen.nilable(Croma.String),
+    token:       Croma.TypeGen.nilable(Croma.String),
+    tracker_url: Croma.TypeGen.nilable(Croma.String),
   ]
 
   defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
@@ -33,21 +32,18 @@ defmodule ExGHPR.LocalConfig do
         _   -> init(cwd)
       end
     tu  = prompt_tracker_url
-    Github.origin_pr_url(cwd)
-    |> Croma.Result.bind(fn opu ->
-      Config.save(%__MODULE__{origin_pr_url: opu, tracker_url: tu, username: un, token: t}, cwd)
-    end)
+    Config.save(%__MODULE__{username: un, token: t, tracker_url: tu}, cwd)
   end
 
   defunp prompt_tracker_url :: nil | String.t do
-    tracker_url = IO.gets "(Optional) Enter issue tracker url (e.g. https://github.com/YuMatsuzawa/ex_openpr/issues): "
+    tracker_url = IO.gets "(Optional) Enter issue tracker url (e.g. https://github.com/YuMatsuzawa/ex_ghpr/issues): "
     case String.rstrip(tracker_url, ?\n) do
       ""  -> nil
       url ->
         case validate_tracker_url(url) do
           {:error, :trailing_slash} -> IO.puts("Must not end with slash.") && prompt_tracker_url
-          {:error, _invalid_url}    -> IO.puts("Invalid URL.") && prompt_tracker_url
-          {:ok, valid_url}          -> valid_url
+          {:error, _invalid_url   } -> IO.puts("Invalid URL.") && prompt_tracker_url
+          {:ok   , valid_url      } -> valid_url
         end
     end
   end
@@ -56,8 +52,7 @@ defmodule ExGHPR.LocalConfig do
     case URI.parse(url) do
       %URI{scheme: nil} -> {:error, :no_scheme}
       %URI{host: nil  } -> {:error, :no_host}
-      _ok               ->
-        if String.ends_with?(url, "/"), do: {:error, :trailing_slash}, else: {:ok, url}
+      _ok               -> if String.ends_with?(url, "/"), do: {:error, :trailing_slash}, else: {:ok, url}
     end
   end
 end
