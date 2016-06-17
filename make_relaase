@@ -1,0 +1,4 @@
+#!/bin/sh
+MIX_ENV=prod mix escript.build
+cd && tar czf ghpr.tar.gz .mix/escripts/ghpr
+cd - && mv ~/ghpr.tar.gz ./.
