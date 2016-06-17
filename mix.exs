@@ -5,7 +5,7 @@ defmodule ExGHPR.Mixfile do
 
   def project do
     [
-      app: :ex_openpr,
+      app: :ex_ghpr,
       version: "0.1.0",
       elixir: "~> 1.2",
       build_embedded: Mix.env == :prod,
