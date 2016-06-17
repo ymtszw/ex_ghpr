@@ -13,8 +13,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         - This is my original intension for this tool over `hub`!
 - Search Pull Requests related to a SHA hash (NYI)
 - Help welcomed :) Especially:
-    - Change push target and Pull Request target repository
-        - e.g. Push the branch to your fork, then PR to the upstream
+    - Automatically create fork if the user is not authorized to push to the target repository
     - Post resultant Pull Request URL to other issue trackers like Redmine/JIRA, via API
         - Obviously, storing issue tracker type and API credentials is required
     - Support Multi Factor Authentication
@@ -48,39 +47,63 @@ This will do:
 
 - Push your current branch to your `origin` repository
     - Just calling system's `git` command
-- Open Pull Request of the branch in the repository
-    - Add the branch name as title
-    - You can input arbitrary message as description. Without message given, `ghpr` will either:
-        - add `<your_issue_tracker_url>/<issue_number>` as description if the branch name start with `<issue_number>_`
-        - put nothing. In Github, *No description provided* message will be shown
+- Open Pull Request of the branch to the repository
+    - Remote, base, title, description, fork user can be set with options
+    - See bellow for default behaviors
 - If OSX, `pbcopy` the resultant Pull Request URL, then `open <your_issue_tracker_url>/<issue_number>`
     - If the system does not have `pbcopy` command, just print the URL then exit
     - If the issue tracker is Github issue, Pull Request auto-link should already be there
     - Otherwise, it is good practice to post your Pull Request URL to the issue!
 
-### Commands and options
+### Sub-commands and options
 
-- Explicitly call Create Pull Request command (to differentiate from `search`)
+- Explicitly create Pull Request (to differentiate from `search`)
 ```
 $ ghpr create
 ```
-- Put description in Pull Request
-```
-$ ghpr -m <description>
-```
-- Change target repository (note: `<remote>` must exist as `git-remote` in the repository)
-```
-$ ghpr -r <remote>
-```
-- Re-configuration
-```
-$ ghpr -c {local|global}
-```
+    - Always request to pull the current branch
+- Options for `create`
+    - Manually set title of the Pull Request
+    ```
+    $ ghpr {-t|--title} <title>
+    ```
+        - Defaults to branch name
+    - Manually set description of the Pull Request
+    ```
+    $ ghpr {-m|--message} <description>
+    ```
+        - Defaults to issue URL (if issue tracker URL is set
+        and the branch name starts with issue number)
+        - If issue tracker URL is not set, no description will be attached
+            - In Github, *No description provided* message will be shown
+    - Change target repository
+    ```
+    $ ghpr {-r|--remote} <remote>
+    ```
+        - `<remote>` must exist as `git remote` in the repository
+        - Defaults to `origin`
+    - Change base reference to be pulled
+    ```
+    $ ghpr {-b|--base} <base>
+    ```
+        - Defaults to `master`. Can be branch name or tag
+    - Specify fork user for Cross-repository Pull Request
+    ```
+    $ ghpr --fork <username>
+    ```
+        - In API call, `head` parameter will become `<username>:<current_branch>`
+        - Obviously, you need to fork the original repository first,
+        to request pull if you are not authorized to push
+        - You can create Pull Request only from the repository itself, or forked repositories
+    - Re-configuration
+    ```
+    $ ghpr {-c|--configure} {local|global}
+    ```
 - Search Pull Request related to a SHA hash (NYI)
 ```
 $ ghpr search <sha_hash>
 ```
-    - `-r` option also works
+    - `-r` option also works. Useful for forked repositories
 
 
 ## Configuration
