@@ -1,7 +1,7 @@
-defmodule ExOpenpr.Mixfile do
+defmodule ExGHPR.Mixfile do
   use Mix.Project
 
-  @name "openpr"
+  @name "ghpr"
 
   def project do
     [
@@ -11,7 +11,7 @@ defmodule ExOpenpr.Mixfile do
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       escript: [
-        main_module: ExOpenpr.CLI,
+        main_module: ExGHPR.CLI,
         name: @name,
         path: Path.expand(Path.join(["~", ".mix", "escripts", @name])), # workaround until elixir 1.3
       ],
@@ -31,10 +31,11 @@ defmodule ExOpenpr.Mixfile do
 
   defp deps do
     [
-      {:git_cli,   "~> 0.2"},
-      {:poison,    "~> 2.0"},
-      {:httpoison, "~> 0.8"},
-      {:croma,     "~> 0.4"},
+      {:git_cli,        "~> 0.2"              },
+      {:poison,         "~> 2.0"              },
+      {:httpoison,      "~> 0.8"              },
+      {:croma,          "~> 0.4"              },
+      {:mix_test_watch, "~> 0.2", [only: :dev]},
     ]
   end
 end
