@@ -1,12 +1,12 @@
 use Croma
 
-defmodule ExOpenpr.Github do
+defmodule ExGHPR.Github do
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
-  alias ExOpenpr.LocalGitRepositoryPath, as: LPath
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @github_api_host "https://api.github.com"
-  @origin_url_pattern ~r|/(?<owner_repo>[^/]+/[^/]+)\.git|
+  @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
 
   @doc """
   Try authenticate to Github. Prompts for username and password. On success, returns `{username, token}`,
@@ -34,7 +34,7 @@ defmodule ExOpenpr.Github do
     {:ok, hostname} = :inet.gethostname
     body = %{
       scopes: "repo",
-      note:   "#{ExOpenpr.Config.cmd_name} for #{username}@#{hostname}"
+      note:   "#{ExGHPR.Config.cmd_name} for #{username}@#{hostname}"
     }
     headers = %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{password}")}",
@@ -49,13 +49,13 @@ defmodule ExOpenpr.Github do
     end
   end
 
-  defun origin_pr_url(cwd :: v[LPath.t]) :: R.t(String.t) do
+  defun pull_request_api_url(cwd :: v[LPath.t], remote :: v[String.t]) :: R.t(String.t) do
     repo = %Git.Repository{path: cwd}
-    case Git.remote(repo, ~w(get-url --push origin)) do
-      {:ok, raw_origin_url} ->
-        %{"owner_repo" => o_r} = Regex.named_captures(@origin_url_pattern, raw_origin_url)
+    case Git.remote(repo, ["get-url", remote]) do
+      {:ok, remote_url} ->
+        %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url)
         {:ok, "#{@github_api_host}/repos/#{o_r}/pulls"}
-      e                     -> e
+      e                 -> e
     end
   end
 
@@ -67,8 +67,8 @@ defmodule ExOpenpr.Github do
                             token    :: v[String.t],
                             title    :: v[String.t],
                             head     :: v[String.t],
-                            base     :: v[String.t] \\ "master",
-                            body     :: v[String.t] \\ "") :: R.t(String.t) do
+                            base     :: v[String.t],
+                            body     :: v[String.t]) :: R.t(String.t) do
     body = %{title: title, head: head, base: base, body: body}
     headers = %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
