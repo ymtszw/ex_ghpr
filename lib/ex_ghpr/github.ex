@@ -78,7 +78,7 @@ defmodule ExGHPR.Github do
 
   @doc """
   Check existence of Pull Request for `base` from `head`.
-  Returns `Croma.Result` of URL if exist, otherwise `nil`
+  Returns `Croma.Result(nil | html_url)`, where `nil` indicates no Pull Request open for the branch.
   """
   defun existing_pull_request(pr_url   :: v[String.t],
                               username :: v[String.t],

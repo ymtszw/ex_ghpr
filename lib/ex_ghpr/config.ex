@@ -95,6 +95,14 @@ defmodule ExGHPR.Config do
     |> R.bind(&Poison.decode/1)
   end
 
+  defun ensure_cwd(cwd :: Path.t) :: map do
+    case load do
+      {:error, _}                -> init |> R.get
+      {:ok, %{^cwd => _} = conf} -> conf
+      {:ok, _conf}               -> LConf.init(cwd) |> R.get
+    end
+  end
+
   defun save(%GConf{} = gconf) :: R.t(map) do
     current_conf = case load do
       {:error, _} -> %{}
