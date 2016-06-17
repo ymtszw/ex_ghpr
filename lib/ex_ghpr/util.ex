@@ -24,6 +24,18 @@ defmodule ExGHPR.Util do
     |> IO.puts
   end
 
+  defun copy_to_clipboard_and_echo(str :: v[String.t]) :: :ok do
+    clip_cmd =
+      System.find_executable("pbcopy") || # OSX
+      System.find_executable("clip")      # Windows
+    if clip_cmd do
+      :os.cmd('echo #{str} | #{clip_cmd}') # echo will append newline after `str`
+      "#{str} (copied to clipboard!)"
+    else
+      str
+    end |> IO.puts
+  end
+
   defun exit_with_error(message :: v[String.t]) :: no_return do
     IO.puts(:stderr, message)
     exit({:shutdown, 1})

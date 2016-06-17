@@ -61,7 +61,7 @@ defmodule ExGHPR.CLI do
         Create.ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
         |> R.map_error(&exit_with_error(inspect(&1)))
         |> R.get
-        |> IO.puts
+        |> copy_to_clipboard_and_echo
     end
   end
 
