@@ -6,25 +6,22 @@ defmodule ExGHPR.CLI do
   alias ExGHPR.GlobalConfig, as: GConf
   alias ExGHPR.LocalConfig, as: LConf
 
+  @string_options [
+    :configure,
+    :remote,
+    :title,
+    :message,
+    :base,
+    :fork,
+  ]
+
   def main(argv) do
     {opts, args0, _err} = OptionParser.parse(argv,
-      strict: [
-        version:   :boolean,
-        configure: :string,
-        remote:    :string,
-        title:     :string,
-        message:   :string,
-        base:      :string,
-        fork:      :string,
-      ],
       aliases: [
         v: :version,
-        c: :configure,
-        r: :remote,
-        t: :title,
-        m: :message,
-        b: :base,
-      ]
+      ] ++ Enum.map(@string_options, fn atom ->
+        {Atom.to_string(atom) |> String.at(0) |> String.to_atom, atom}
+      end)
     )
     cond do
       opts[:version]         -> IO.puts("#{Config.cmd_name} - #{Config.cmd_version}")
@@ -41,7 +38,7 @@ defmodule ExGHPR.CLI do
   defunp configure_ghpr(switch :: term) :: R.t(map) do
     "local"  -> LConf.init(File.cwd!)
     "global" -> GConf.init
-    _other   -> exit("$ #{Config.cmd_name} --configure {local|global}")
+    _other   -> exit_with_error("$ #{Config.cmd_name} --configure {local|global}")
   end
 
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
@@ -49,28 +46,28 @@ defmodule ExGHPR.CLI do
     current_conf = load_conf(cwd)
     gconf = current_conf["global"]
     case current_conf[cwd] do
-      nil   -> exit("Not a git repository")
+      nil   -> exit_with_error("Not a git repository")
       lconf ->
         current_repo = %Git.Repository{path: cwd}
         current_branch = case Git.rev_parse(current_repo, ~w(--abbrev-ref HEAD)) do
-          {:ok, "HEAD\n"} -> exit("Cannot open PR from detached HEAD")
+          {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
           {:ok, name    } -> String.rstrip(name, ?\n)
         end
         # {:ok, _} = Git.push(current_repo, ["--set-upstream", "origin", current_branch])
-        {:ok, url} = Github.pull_request_api_url(cwd, opts[:remote] || "origin")
+        {:ok, url} = Github.pull_request_api_url(cwd, validate_remote(opts[:remote], "origin"))
         {u_n, t} = case {lconf["username"], lconf["token"]} do
           {nil, _} -> {gconf["username"], gconf["token"]}
           creds    -> creds
         end
-        title = opts[:title] || current_branch
-        head = case opts[:fork] do
+        title = validate_title(opts[:title], current_branch)
+        head = case validate_fork(opts[:fork]) do
           nil  -> current_branch
           fork -> "#{fork}:#{current_branch}"
         end
-        body = opts[:message] || calc_body(current_branch, lconf)
-        case Github.create_pull_request(url, u_n, t, title, head, opts[:base] || "master", body) do
+        body = validate_message(opts[:message], calc_body(current_branch, lconf))
+        case Github.create_pull_request(url, u_n, t, title, head, validate_base(opts[:base], "master"), body) do
           {:ok   , html_url     } -> IO.puts(html_url)
-          {:error, :unauthorized} -> exit("Unauthorized. Try `$ #{Config.cmd_name} --configure local`")
+          {:error, :unauthorized} -> exit_with_error("Unauthorized. Try `$ #{Config.cmd_name} --configure local`")
           {:error, reason       } -> IO.inspect(reason)
         end
     end
@@ -94,5 +91,20 @@ defmodule ExGHPR.CLI do
       %{"issue_num" => num} -> "#{t_u}/#{num}"
       _                     -> ""
     end
+  end
+
+  for key <- @string_options do
+    defunp unquote(:"validate_#{key}")(value :: nil | boolean | String.t, default :: nil | String.t \\ nil) :: String.t do
+      case value do
+        n when is_nil(n)     -> default
+        b when is_boolean(b) -> exit_with_error("--#{unquote(key)} option must take String value")
+        str                  -> str
+      end
+    end
+  end
+
+  defunp exit_with_error(message :: v[String.t]) :: no_return do
+    IO.puts(:stderr, message)
+    exit({:shutdown, 1})
   end
 end
