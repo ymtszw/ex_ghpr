@@ -1,6 +1,6 @@
 # ExGHPR
 
-CLI tool to work with Github Pull Request.
+`ghpr` command to work with GitHub Pull Request.
 
 Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 
@@ -8,11 +8,11 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 
 - Open Pull Request
     - It adds your issue URL in Pull Request description,
-    and open the issue with resultant Pull Request URL copied to clipboard (only available in OSX)
+    and open the issue with resultant Pull Request URL copied to clipboard
     - You can configure issue tracker URL and user **per repository**
         - This is my original intension for this tool over `hub`!
 - Search Pull Requests related to a SHA hash (NYI)
-- Help welcomed :) Especially:
+- Help welcomed!! Especially:
     - Automatically create fork if the user is not authorized to push to the target repository
     - Post resultant Pull Request URL to other issue trackers like Redmine/JIRA, via API
         - Obviously, storing issue tracker type and API credentials is required
@@ -25,7 +25,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - Personally recommend [asdf](https://github.com/asdf-vm/asdf) with
     [asdf-erlang](https://github.com/asdf-vm/asdf-erlang)/[asdf-elixir](https://github.com/asdf-vm/asdf-elixir)
     - If you install via compiled binary, the only dependency is Erlang
-    - If you build by yourself, Elixir and `mix` required
+    - If you want to build by yourself, Elixir and `mix` required
 2. Install by either:
     - self building
         - Commands:
@@ -38,7 +38,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var
             - This will be the default escript installation path coming in Elixir 1.3
-    - downloading compiled binary (TBD)
+    - downloading compiled binary
 
 ## Usage
 
@@ -51,8 +51,9 @@ This will do:
 - Open Pull Request of the branch to the repository
     - Remote, base, title, description, fork user can be set with options
     - See bellow for default behaviors
-- If OSX, `pbcopy` the resultant Pull Request URL, then `open <your_issue_tracker_url>/<issue_number>`
-    - If the system does not have `pbcopy` command, just print the URL then exit
+- `pbcopy` (OSX) or `clip` (Windows) the resultant Pull Request URL
+    - If neither exist, just print the URL
+- `open` (OSX) or `cmd /c start` (Windows) the issue URL
     - If the issue tracker is Github issue, Pull Request auto-link should already be there
     - Otherwise, it is good practice to post your Pull Request URL to the issue!
 
