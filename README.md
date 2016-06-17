@@ -58,52 +58,35 @@ This will do:
 
 ### Sub-commands and options
 
-- Explicitly create Pull Request (to differentiate from `search`)
-    ```
-    $ ghpr create
-    ```
+- `$ ghpr create`
+    - Explicitly create Pull Request (to differentiate from `search`)
     - Always request to pull the current branch
 - Options for `create`
-    - Manually set title of the Pull Request
-    ```
-    $ ghpr {-t|--title} <title>
-    ```
+    - `$ ghpr {-t|--title} <title>`
+        - Manually set title of the Pull Request
         - Defaults to branch name
-    - Manually set description of the Pull Request
-    ```
-    $ ghpr {-m|--message} <description>
-    ```
+    - `$ ghpr {-m|--message} <description>`
+        - Manually set description of the Pull Request
         - Defaults to issue URL (if issue tracker URL is set
         and the branch name starts with issue number)
         - If issue tracker URL is not set, no description will be attached
-            - In Github, *No description provided* message will be shown
-    - Change target repository
-    ```
-    $ ghpr {-r|--remote} <remote>
-    ```
+            - In Github, *"No description provided"* message will be shown
+    - `$ ghpr {-r|--remote} <remote>`
+        - Change target repository
         - `<remote>` must exist as `git remote` in the repository
         - Defaults to `origin`
-    - Change base reference to be pulled
-    ```
-    $ ghpr {-b|--base} <base>
-    ```
+    - `$ ghpr {-b|--base} <base>`
+        - Change Pull Request target reference
         - Defaults to `master`. Can be branch name or tag
-    - Specify fork user for Cross-repository Pull Request
-    ```
-    $ ghpr --fork <username>
-    ```
+    - `$ ghpr --fork <username>`
+        - Specify fork user for Cross-repository Pull Request
         - In API call, `head` parameter will become `<username>:<current_branch>`
         - Obviously, you need to fork the original repository first,
-        to request pull if you are not authorized to push
-        - You can create Pull Request only from the repository itself, or forked repositories
-    - Re-configuration
-    ```
-    $ ghpr {-c|--configure} {local|global}
-    ```
-- Search Pull Request related to a SHA hash (NYI)
-```
-$ ghpr search <sha_hash>
-```
+        if you are not authorized to push to it
+    - `$ ghpr {-c|--configure} {local|global}`
+        - Re-configuration
+- `$ ghpr search <sha_hash>`
+    - Search Pull Request related to a SHA hash **(NYI)**
     - `-r` option also works. Useful for forked repositories
 
 
