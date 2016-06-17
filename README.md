@@ -28,15 +28,16 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - If you build by yourself, Elixir and `mix` required
 2. Install by either:
     - self building
-```
-$ git clone https://github.com/YuMatsuzawa/ex_ghpr
-$ cd ex_ghpr
-$ mix deps.get
-$ mix escript.build
-```
+        - Commands:
+        ```
+        $ git clone https://github.com/YuMatsuzawa/ex_ghpr
+        $ cd ex_ghpr
+        $ mix deps.get
+        $ mix escript.build
+        ```
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var
-            - (this is default escript installation path coming in Elixir 1.3)
+            - This will be the default escript installation path coming in Elixir 1.3
     - downloading compiled binary (TBD)
 
 ## Usage
@@ -58,9 +59,9 @@ This will do:
 ### Sub-commands and options
 
 - Explicitly create Pull Request (to differentiate from `search`)
-```
-$ ghpr create
-```
+    ```
+    $ ghpr create
+    ```
     - Always request to pull the current branch
 - Options for `create`
     - Manually set title of the Pull Request
