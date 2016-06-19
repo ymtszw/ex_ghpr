@@ -1,12 +1,20 @@
 use Croma
 
 defmodule ExGHPR.AuthConfig do
+  import ExGHPR.Util
   alias ExGHPR.{Config, Github}
 
-  defun init(opts \\ [default: false]) :: Croma.Result.t(map) do
+  defun init_default :: Croma.Result.t(map) do
     {username, token} = Github.try_auth
-    auth_user = if opts[:default], do: "$default", else: username
-    Config.save_auth(%{auth_user => %{"username" => username, "token" => token}})
+    Config.save_auth(%{"$default" => %{"username" => username, "token" => token}})
+  end
+
+  defun init_local :: String.t do
+    {username, token} = Github.try_auth
+    case Config.save_auth(%{username => %{"username" => username, "token" => token}}) do
+      {:error, reason} -> exit_with_error(inspect(reason))
+      {:ok, _}         -> username
+    end
   end
 end
 
@@ -16,7 +24,7 @@ defmodule ExGHPR.LocalConfig do
     token:       Croma.TypeGen.nilable(Croma.String),
     tracker_url: Croma.TypeGen.nilable(Croma.String),
   ]
-  alias ExGHPR.Config
+  alias ExGHPR.{Config, AuthConfig}
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
@@ -25,7 +33,7 @@ defmodule ExGHPR.LocalConfig do
     auth =
       case yn do
         "y" -> "$default"
-        "n" -> AConf.init
+        "n" -> AuthConfig.init_local
         _   -> init(cwd)
       end
     tu = prompt_tracker_url
@@ -91,8 +99,7 @@ defmodule ExGHPR.Config do
   so you need to revoke it first before re-configuration.
   """
   alias Croma.Result, as: R
-  alias ExGHPR.AuthConfig, as: AConf
-  alias ExGHPR.LocalConfig, as: LConf
+  alias ExGHPR.{AuthConfig, LocalConfig}
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   @cmd_name    Mix.Project.config[:escript][:name]
@@ -104,7 +111,7 @@ defmodule ExGHPR.Config do
 
   defun init :: R.t(map) do
     IO.puts "#{cmd_name} - #{cmd_version}"
-    AConf.init(default: true)
+    AuthConfig.init_default
     |> R.map(fn conf ->
       init_lconf_or_nil(File.cwd!) || conf
     end)
@@ -132,13 +139,13 @@ defmodule ExGHPR.Config do
 
   defunp init_lconf_or_nil(cwd :: Path.t) :: nil | map do
     case LPath.validate(cwd) do
-      {:ok, repo} -> LConf.init(repo) |> R.get
+      {:ok, repo} -> LocalConfig.init(repo) |> R.get
       {:error, _} -> nil
     end
   end
 
   defun save_local_conf(lconf :: v[map]) :: R.t(map) do
-    new_conf = Map.merge(load!, lconf)
+    new_conf = load! |> Map.merge(lconf)
     save(new_conf)
   end
 
