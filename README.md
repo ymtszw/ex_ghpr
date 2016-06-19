@@ -12,15 +12,10 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - You can configure issue tracker URL and identities **per repository**
         - This is my original intension for this tool over `hub`!
 - Search Pull Requests related to a SHA hash (NYI)
-- Help welcomed!! Especially:
-    - Automatically create fork if the user is not authorized to push to the target repository
-    - Post resultant Pull Request URL to other issue trackers like Redmine/JIRA, via API
-        - Obviously, storing issue tracker type and API credentials is required
-    - Support Multi Factor Authentication
 
 ## Installation
 
-0. Require Git
+0. Require Git (2.7+)
 1. Install [Erlang](http://erlang.org/) and [Elixir](http://elixir-lang.org/)
     - Personally recommend [asdf](https://github.com/asdf-vm/asdf) with
     [asdf-erlang](https://github.com/asdf-vm/asdf-erlang)/[asdf-elixir](https://github.com/asdf-vm/asdf-elixir)
@@ -104,3 +99,13 @@ This will do:
     (will be used to build an issue URL. Must not end with `/`)
 - Configurations and tokens will be stored in `~/.config/ghpr` as JSON format
 - Configurations are held per local repository
+
+## To Do
+
+- Search features
+- Test more
+    - Including Windows support
+- Automatically create fork if the user is not authorized to push to the target repository
+- Post resultant Pull Request URL to other issue trackers like Redmine/JIRA, via API
+    - Obviously, storing issue tracker type and API credentials is required
+- Support Multi Factor Authentication
