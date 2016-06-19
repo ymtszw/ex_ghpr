@@ -3,9 +3,9 @@ use Croma
 defmodule ExGHPR.CLI.Create do
   @moduledoc false
 
+  import ExGHPR.{Util, CLI}
   alias Croma.Result, as: R
   alias ExGHPR.Github
-  import ExGHPR.{Util, CLI}
 
   @ssh_url_pattern ~r|:(?<owner_repo>\S+/\S+.git)\n?\Z|
 

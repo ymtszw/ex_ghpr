@@ -1,10 +1,9 @@
 use Croma
 
 defmodule ExGHPR.CLI do
-  alias Croma.Result, as: R
   import ExGHPR.Util
+  alias Croma.Result, as: R
   alias ExGHPR.Config
-  alias ExGHPR.GlobalConfig, as: GConf
   alias ExGHPR.LocalConfig, as: LConf
   alias ExGHPR.CLI.Create
 
@@ -41,7 +40,7 @@ defmodule ExGHPR.CLI do
 
   defunp configure_ghpr(switch :: term) :: R.t(map) do
     "local"  -> LConf.init(File.cwd!)
-    "global" -> GConf.init
+    "global" -> Config.init
     _other   -> exit_with_error("$ #{Config.cmd_name} --configure {local|global}")
   end
 

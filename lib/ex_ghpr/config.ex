@@ -11,13 +11,13 @@ defmodule ExGHPR.AuthConfig do
 end
 
 defmodule ExGHPR.LocalConfig do
-  alias ExGHPR.Config
-  alias ExGHPR.LocalGitRepositoryPath, as: LPath
   use Croma.Struct, fields: [
     username:    Croma.TypeGen.nilable(Croma.String),
     token:       Croma.TypeGen.nilable(Croma.String),
     tracker_url: Croma.TypeGen.nilable(Croma.String),
   ]
+  alias ExGHPR.Config
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
     IO.puts "Configuring git repository: #{cwd}"
@@ -130,7 +130,7 @@ defmodule ExGHPR.Config do
     end
   end
 
-  defunp init_lconf_or_nil(cwd) :: nil | map do
+  defunp init_lconf_or_nil(cwd :: Path.t) :: nil | map do
     case LPath.validate(cwd) do
       {:ok, repo} -> LConf.init(repo) |> R.get
       {:error, _} -> nil
