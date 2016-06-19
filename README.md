@@ -38,7 +38,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var
             - This will be the default escript installation path coming in Elixir 1.3
-    - downloading compiled binary
+    - downloading compiled binary from [here](https://github.com/YuMatsuzawa/ex_ghpr/releases/latest)
 
 ## Usage
 
