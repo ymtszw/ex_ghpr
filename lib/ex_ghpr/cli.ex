@@ -1,10 +1,9 @@
 use Croma
 
 defmodule ExGHPR.CLI do
-  alias Croma.Result, as: R
   import ExGHPR.Util
+  alias Croma.Result, as: R
   alias ExGHPR.Config
-  alias ExGHPR.GlobalConfig, as: GConf
   alias ExGHPR.LocalConfig, as: LConf
   alias ExGHPR.CLI.Create
 
@@ -41,7 +40,7 @@ defmodule ExGHPR.CLI do
 
   defunp configure_ghpr(switch :: term) :: R.t(map) do
     "local"  -> LConf.init(File.cwd!)
-    "global" -> GConf.init
+    "global" -> Config.init
     _other   -> exit_with_error("$ #{Config.cmd_name} --configure {local|global}")
   end
 
@@ -53,7 +52,7 @@ defmodule ExGHPR.CLI do
       lconf ->
         current_repo   = %Git.Repository{path: cwd}
         current_branch = fetch_current_branch(current_repo)
-        {u_n, t}       = choose_credentials(lconf, current_conf["global"])
+        %{"username" => u_n, "token" => t} = current_conf["auth"][lconf["auth_user"]]
         Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
         |> R.map_error(&exit_with_error(inspect(&1)))
         |> R.get

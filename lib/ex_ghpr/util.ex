@@ -10,13 +10,6 @@ defmodule ExGHPR.Util do
     end
   end
 
-  defun choose_credentials(%{"username" => lun, "token" => lt}, %{"username" => gun, "token" => gt}) :: {String.t, String.t} do
-    case {lun, lt} do
-      {nil, _} -> {gun, gt}
-      creds    -> creds
-    end
-  end
-
   defun puts_last_line(str :: v[String.t]) :: :ok do
     String.split(str, "\n", trim: true)
     |> Enum.reverse

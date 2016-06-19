@@ -1,11 +1,13 @@
 use Croma
 
 defmodule ExGHPR.CLI.Create do
+  @moduledoc false
+
+  import ExGHPR.{Util, CLI}
   alias Croma.Result, as: R
   alias ExGHPR.Github
-  import ExGHPR.{Util, CLI}
 
-  @moduledoc false
+  @ssh_url_pattern ~r|:(?<owner_repo>\S+/\S+.git)\n?\Z|
 
   defun ensure_current_branch_pushed_to_origin(
       %Git.Repository{} = repo,
@@ -18,10 +20,17 @@ defmodule ExGHPR.CLI.Create do
     end
     origin_url_with_auth = case URI.parse(origin_url) do
       %URI{scheme: "https", host: "github.com", path: path} ->
-        "https://#{username}:#{token}@github.com#{String.rstrip(path, ?\n)}" # Yes, this way you can push without entering password
-      _ssh_url -> String.rstrip(origin_url, ?\n)
+        "https://#{username}:#{token}@github.com#{String.rstrip(path, ?\n)}"
+      _ssh_url -> ssh_to_https(origin_url, username, token)
     end
     Git.push(repo, [origin_url_with_auth, current_branch])
+  end
+
+  defunp ssh_to_https(ssh_url :: v[String.t], username :: v[String.t], token :: v[String.t]) :: String.t do
+    case Regex.named_captures(@ssh_url_pattern, ssh_url) do
+      %{"owner_repo" => o_r} -> "https://#{username}:#{token}@github.com/#{String.rstrip(o_r, ?\n)}"
+      nil                   -> exit_with_error("Remote URL does not match with `git@github.com:<owner>/<repo>.git`!")
+    end
   end
 
   defun ensure_pull_requested(
@@ -53,7 +62,7 @@ defmodule ExGHPR.CLI.Create do
   defunp calc_body(branch_name :: v[String.t], tracker_url) :: String.t do
     case Regex.named_captures(~r/\A(?<issue_num>\d+)_/, branch_name) do
       %{"issue_num" => num} -> open_issue_url("#{tracker_url}/#{num}")
-      _                     -> ""
+      nil                   -> ""
     end
   end
 end

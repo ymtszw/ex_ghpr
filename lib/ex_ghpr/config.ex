@@ -1,38 +1,35 @@
 use Croma
 
-defmodule ExGHPR.GlobalConfig do
+defmodule ExGHPR.AuthConfig do
   alias ExGHPR.{Config, Github}
-  use Croma.Struct, fields: [
-    username: Croma.String,
-    token:    Croma.String,
-  ]
 
-  defun init :: Croma.Result.t(map) do
+  defun init(opts \\ [default: false]) :: Croma.Result.t(map) do
     {username, token} = Github.try_auth
-    Config.save(%__MODULE__{username: username, token: token})
+    auth_user = if opts[:default], do: "$default", else: username
+    Config.save_auth(%{auth_user => %{"username" => username, "token" => token}})
   end
 end
 
 defmodule ExGHPR.LocalConfig do
-  alias ExGHPR.{Config, Github}
-  alias ExGHPR.LocalGitRepositoryPath, as: LPath
   use Croma.Struct, fields: [
     username:    Croma.TypeGen.nilable(Croma.String),
     token:       Croma.TypeGen.nilable(Croma.String),
     tracker_url: Croma.TypeGen.nilable(Croma.String),
   ]
+  alias ExGHPR.Config
+  alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
     IO.puts "Configuring git repository: #{cwd}"
     yn = IO.gets("Use default user? [Y/N]: ") |> String.rstrip(?\n) |> String.downcase
-    {un, t} =
+    auth =
       case yn do
-        "y" -> {nil, nil}
-        "n" -> Github.try_auth
+        "y" -> "$default"
+        "n" -> AConf.init
         _   -> init(cwd)
       end
-    tu  = prompt_tracker_url
-    Config.save(%__MODULE__{username: un, token: t, tracker_url: tu}, cwd)
+    tu = prompt_tracker_url
+    Config.save_local_conf(%{cwd => %{"auth_user" => auth, "tracker_url" => tu}})
   end
 
   defunp prompt_tracker_url :: nil | String.t do
@@ -70,8 +67,31 @@ defmodule ExGHPR.LocalGitRepositoryPath do
 end
 
 defmodule ExGHPR.Config do
+  @moduledoc """
+  Configuration for `ghpr` will be stored in `~/.mix/config/ghpr` in the following format:
+
+      {
+        "auth": {
+          "$default": { "username": "GlobalUser", "token": "Token" },
+          "AnotherUser": { "username": "AnotherUser", "token": "Token" },
+          ...
+        },
+        "path/to/local/repo": {
+          "auth_user": "$default",
+          "tracker_url": "https://github.com/GlobalUser/repo/issues"
+        },
+        "path/to/another/repo": {
+          "auth_user": "AnotherUser",
+          "tracker_url": null
+        }
+      }
+
+  Deleting the above file can reset local configurations.
+  Note that already issued personal access token are still active,
+  so you need to revoke it first before re-configuration.
+  """
   alias Croma.Result, as: R
-  alias ExGHPR.GlobalConfig, as: GConf
+  alias ExGHPR.AuthConfig, as: AConf
   alias ExGHPR.LocalConfig, as: LConf
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
@@ -79,14 +99,12 @@ defmodule ExGHPR.Config do
   @cmd_version Mix.Project.config[:version]
   @config_file Path.join(["~", ".config", @cmd_name])
 
-  @username_pattern ~r/\A\n\Z/
-
   def cmd_name,    do: @cmd_name
   def cmd_version, do: @cmd_version
 
   defun init :: R.t(map) do
     IO.puts "#{cmd_name} - #{cmd_version}"
-    GConf.init
+    AConf.init(default: true)
     |> R.map(fn conf ->
       init_lconf_or_nil(File.cwd!) || conf
     end)
@@ -97,6 +115,13 @@ defmodule ExGHPR.Config do
     |> R.bind(&Poison.decode/1)
   end
 
+  defunp load! :: map do
+    case load do
+      {:error, _   } -> %{}
+      {:ok, current} -> current
+    end
+  end
+
   defun ensure_cwd(cwd :: Path.t) :: map do
     case load do
       {:error, _}                -> init |> R.get
@@ -105,29 +130,28 @@ defmodule ExGHPR.Config do
     end
   end
 
-  defunp init_lconf_or_nil(cwd) :: nil | map do
+  defunp init_lconf_or_nil(cwd :: Path.t) :: nil | map do
     case LPath.validate(cwd) do
       {:ok, repo} -> LConf.init(repo) |> R.get
       {:error, _} -> nil
     end
   end
 
-  defun save(%GConf{} = gconf) :: R.t(map) do
-    current_conf = case load do
-      {:error, _} -> %{}
-      {:ok, conf} -> conf
-    end
-    new_conf = Map.put(current_conf, "global", gconf)
-    case File.write(Path.expand(@config_file), Poison.encode!(new_conf)) do
-      :ok -> load
-      e   -> e
-    end
+  defun save_local_conf(lconf :: v[map]) :: R.t(map) do
+    new_conf = Map.merge(load!, lconf)
+    save(new_conf)
   end
-  defun save(%LConf{} = lconf, path :: v[LPath.t]) :: R.t(map) do
-    {:ok, current_conf} = load
-    new_conf = Map.put(current_conf, path, lconf)
-    case File.write(Path.expand(@config_file), Poison.encode!(new_conf)) do
-      :ok -> load
+
+  defun save_auth(aconf :: v[map]) :: R.t(map) do
+    current_conf = load!
+    new_aconf = Map.merge(current_conf["auth"] || %{}, aconf)
+    new_conf = Map.put(current_conf, "auth", new_aconf)
+    save(new_conf)
+  end
+
+  defunp save(conf :: v[map]) :: R.t(map) do
+    case File.write(Path.expand(@config_file), Poison.encode!(conf)) do
+      :ok -> {:ok, conf}
       e   -> e
     end
   end
