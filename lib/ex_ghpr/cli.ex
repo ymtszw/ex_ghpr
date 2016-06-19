@@ -53,7 +53,7 @@ defmodule ExGHPR.CLI do
       lconf ->
         current_repo   = %Git.Repository{path: cwd}
         current_branch = fetch_current_branch(current_repo)
-        {u_n, t}       = choose_credentials(lconf, current_conf["global"])
+        %{"username" => u_n, "token" => t} = current_conf["auth"][lconf["auth_user"]]
         Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
         |> R.map_error(&exit_with_error(inspect(&1)))
         |> R.get
