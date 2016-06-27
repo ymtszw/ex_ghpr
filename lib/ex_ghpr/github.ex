@@ -85,9 +85,8 @@ defmodule ExGHPR.Github do
                               token    :: v[String.t],
                               head     :: v[String.t],
                               base     :: v[String.t]) :: R.t(nil | String.t) do
-    params = [params: [state: "open"]]
     headers = auth_json_headers(username, token)
-    case HTTPoison.get(pr_url, headers, params) do
+    case HTTPoison.get(pr_url, headers, [params: [state: "open"]]) do
       {:ok, %Res{status_code: 200, body: "[]"}} -> {:ok, nil}
       {:ok, %Res{status_code: 200, body: list}} ->
         Poison.decode(list)
