@@ -110,7 +110,6 @@ This will do:
 
 ## To Do
 
-- Search features
 - Test more
     - Including Windows support
 - Automatically create fork if the user is not authorized to push to the target repository
