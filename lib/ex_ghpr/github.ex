@@ -85,13 +85,18 @@ defmodule ExGHPR.Github do
                               token    :: v[String.t],
                               head     :: v[String.t],
                               base     :: v[String.t]) :: R.t(nil | String.t) do
-    params = [params: [state: "open", head: head, base: base]]
+    params = [params: [state: "open"]]
     headers = auth_json_headers(username, token)
     case HTTPoison.get(pr_url, headers, params) do
       {:ok, %Res{status_code: 200, body: "[]"}} -> {:ok, nil}
       {:ok, %Res{status_code: 200, body: list}} ->
         Poison.decode(list)
-        |> R.map(fn [hd | _] -> hd["html_url"] end)
+        |> R.map(fn list ->
+          case Enum.find(list, fn pr -> pr["head"]["ref"] == head && pr["base"]["ref"] == base end) do
+            nil -> nil
+            map -> map["html_url"]
+          end
+        end)
       {:ok, %Res{status_code: c, body: body}  } -> {:error, [status_code: c, body: Poison.decode!(body)]}
     end
   end
