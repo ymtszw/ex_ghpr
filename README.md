@@ -82,12 +82,16 @@ This will do:
     - `$ ghpr {-c|--configure} {local|global}`
         - Re-configuration
 - `$ ghpr search <sha_hash>`
-    - Search Pull Request related to a SHA hash
-    - `-r` option also works. Useful for forked repositories **(NYI)**
+    - Search Pull Request related to a SHA hash, then open it in your browser
+    - If no Pull Request found for that commit hash, nothing happens
 - Options for `search`
     - `$ ghpr search {-l|--line} <number> <file_name>`
         - Blame specified line of the file, then search Pull Request related to the SHA hash
         - When you specify `--line`, `file_name` must be a valid file
+    - `$ ghpr search {-r|--remote} <sha_hash>`
+        - Change target repository
+        - `<remote>` must exist as `git remote` in the repository
+        - Defaults to `origin`
 
 
 ## Configuration
