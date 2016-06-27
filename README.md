@@ -11,7 +11,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - Also, copy resultant Pull Request URL to clipboard, open issue URL in browser
     - You can configure issue tracker URL and identities **per repository**
         - This is my original intension for this tool over `hub`!
-- Search Pull Requests related to a SHA hash (NYI)
+- Search Pull Requests related to a SHA hash or file name
 
 ## Installation
 
@@ -82,8 +82,8 @@ This will do:
     - `$ ghpr {-c|--configure} {local|global}`
         - Re-configuration
 - `$ ghpr search <sha_hash>`
-    - Search Pull Request related to a SHA hash **(NYI)**
-    - `-r` option also works. Useful for forked repositories
+    - Search Pull Request related to a SHA hash
+    - `-r` option also works. Useful for forked repositories **(NYI)**
 - Options for `search`
     - `$ ghpr search {-l|--line} <number> <file_name>`
         - Blame specified line of the file, then search Pull Request related to the SHA hash
