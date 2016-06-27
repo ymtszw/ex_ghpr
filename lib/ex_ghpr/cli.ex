@@ -5,7 +5,7 @@ defmodule ExGHPR.CLI do
   alias Croma.Result, as: R
   alias ExGHPR.Config
   alias ExGHPR.LocalConfig, as: LConf
-  alias ExGHPR.CLI.Create
+  alias ExGHPR.CLI.{Create, Search}
 
   @string_options [
     :configure,
@@ -20,11 +20,13 @@ defmodule ExGHPR.CLI do
     {opts, args0, _err} = OptionParser.parse(argv,
       aliases: [
         v: :version,
-      ] ++ Enum.filter_map(@string_options,
-      fn atom -> atom != :fork end,
-      fn atom ->
+        l: :line,
+      ] ++ Enum.filter_map(@string_options, fn atom -> atom != :fork end, fn atom ->
         {Atom.to_string(atom) |> String.at(0) |> String.to_atom, atom}
-      end)
+      end),
+      switches: [
+        line: :integer,
+      ]
     )
     cond do
       opts[:version]         -> IO.puts("#{Config.cmd_name} - #{Config.cmd_version}")
@@ -58,8 +60,27 @@ defmodule ExGHPR.CLI do
     end)
   end
 
-  defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
-    exit_with_error("NYI")
+  defunp search_ghpr(opts :: Keyword.t, args :: [term]) :: :ok | {:error, term} do
+    exec_with_git_repository(fn current_repo, u_n, t, _lconf ->
+      file_name_or_sha_hash = hd(args)
+      sha_hash =
+        case opts[:line] do
+          nil -> file_name_or_sha_hash
+          num ->
+            Search.blame(current_repo, file_name_or_sha_hash, num)
+            |> Croma.Result.map_error(&exit_with_error(inspect(&1)))
+            |> Croma.Result.get
+        end
+      fetch_remote_owner_repo(current_repo, "origin")
+      |> R.get
+      |> Search.search_pull_requests_and_list_url(u_n, t, sha_hash)
+      |> R.map_error(&exit_with_error(&1))
+      |> R.get
+      |> Enum.each(fn html_url ->
+        IO.puts(html_url)
+        open_url(html_url)
+      end)
+    end)
   end
 
   defun exec_with_git_repository(block :: (struct, binary, binary, map -> :ok)) :: :ok do

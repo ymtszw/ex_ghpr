@@ -1,11 +1,11 @@
 use Croma
 
 defmodule ExGHPR.Github do
+  import ExGHPR.Util
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
 
   @github_api_host "https://api.github.com"
-  @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
 
   # Auth related
 
@@ -53,11 +53,8 @@ defmodule ExGHPR.Github do
   # Create/List related
 
   defun pull_request_api_url(%Git.Repository{} = repo, remote :: v[String.t]) :: R.t(String.t) do
-    Git.remote(repo, ["get-url", remote])
-    |> R.map(fn remote_url ->
-      %{"owner_repo" => o_r} = Regex.named_captures(@remote_url_pattern, remote_url) # Should rarely fail
-      "#{@github_api_host}/repos/#{o_r}/pulls"
-    end)
+    fetch_remote_owner_repo(repo, remote)
+    |> R.map(fn o_r -> "#{@github_api_host}/repos/#{o_r}/pulls" end)
   end
 
   @doc """
@@ -89,7 +86,7 @@ defmodule ExGHPR.Github do
                               token    :: v[String.t],
                               head     :: v[String.t],
                               base     :: v[String.t]) :: R.t(nil | String.t) do
-    case HTTPoison.get(pr_url, auth_json_headers(username, token)) do
+    case HTTPoison.get(pr_url, auth_header(username, token)) do
       {:ok, %Res{status_code: 200, body: "[]"}} -> {:ok, nil}
       {:ok, %Res{status_code: 200, body: list}} ->
         Poison.decode(list)
@@ -111,10 +108,23 @@ defmodule ExGHPR.Github do
 
   # Search related
 
-  def auth_json_headers(username, token) do
-    %{
-      "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
-      "content-type"  => "application/json",
-    }
+  @doc """
+  Returns list of PR in Croma.Result
+  """
+  defun search_pull_requests_with_sha_hash(owner_repo :: v[String.t], username :: v[String.t], token :: v[String.t], sha_hash :: v[String.t]) :: R.t([map]) do
+    pr_search_url = "#{@github_api_host}/search/issues"
+    query = "type:pr repo:#{owner_repo} #{sha_hash}"
+    case HTTPoison.get(pr_search_url, auth_header(username, token), [params: [q: query]]) do
+      {:ok, %Res{status_code: 200, body: list}} -> {:ok, Poison.decode!(list) |> Map.get("items")}
+      {:ok, %Res{status_code: c,   body: body}} -> {:error, [status_code: c, body: Poison.decode!(body)]}
+    end
   end
+
+  # Helpers
+
+  def auth_json_headers(username, token) do
+    Map.merge(auth_header(username, token), %{"content-type"  => "application/json"})
+  end
+
+  def auth_header(username, token), do: %{"authorization" => "Basic #{Base.encode64("#{username}:#{token}")}"}
 end

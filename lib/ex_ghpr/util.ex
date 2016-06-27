@@ -3,11 +3,21 @@ use Croma
 defmodule ExGHPR.Util do
   @moduledoc false
 
+  @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
+
   defun fetch_current_branch(%Git.Repository{} = repo) :: String.t do
     case Git.rev_parse(repo, ~w(--abbrev-ref HEAD)) do
       {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
       {:ok, name    } -> String.rstrip(name, ?\n)
     end
+  end
+
+  defun fetch_remote_owner_repo(%Git.Repository{} = repo, remote :: v[String.t]) :: Croma.Result.t(String.t) do
+    Git.remote(repo, ["get-url", remote])
+    |> Croma.Result.map(fn remote_url ->
+      Regex.named_captures(@remote_url_pattern, remote_url) # Should rarely fail
+      |> Map.get("owner_repo")
+    end)
   end
 
   defun puts_last_line(str :: v[String.t]) :: :ok do
@@ -17,8 +27,8 @@ defmodule ExGHPR.Util do
     |> IO.puts
   end
 
-  def   open_issue_url(""), do: ""
-  defun open_issue_url(url :: v[String.t]) :: String.t do
+  def   open_url(""), do: ""
+  defun open_url(url :: v[String.t]) :: String.t do
     open_cmd =
       System.find_executable("open") ||                 # OSX
       (System.find_executable("cmd") && "cmd /c start") # Windows
