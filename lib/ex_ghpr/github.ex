@@ -85,18 +85,27 @@ defmodule ExGHPR.Github do
                               token    :: v[String.t],
                               head     :: v[String.t],
                               base     :: v[String.t]) :: R.t(nil | String.t) do
-    params = [params: [state: "open", head: head, base: base]]
-    headers = auth_json_headers(username, token)
-    case HTTPoison.get(pr_url, headers, params) do
+    case HTTPoison.get(pr_url, auth_json_headers(username, token)) do
       {:ok, %Res{status_code: 200, body: "[]"}} -> {:ok, nil}
       {:ok, %Res{status_code: 200, body: list}} ->
         Poison.decode(list)
-        |> R.map(fn [hd | _] -> hd["html_url"] end)
+        |> R.map(&extract_matching_pull_request_url(&1, head, base))
       {:ok, %Res{status_code: c, body: body}  } -> {:error, [status_code: c, body: Poison.decode!(body)]}
     end
   end
 
-  defp auth_json_headers(username, token) do
+  defp extract_matching_pull_request_url(list, head, base) do
+    branch_name = Regex.replace(~r|^\S+:|, head, "")
+    matched = Enum.find(list, fn pr ->
+      pr["head"]["ref"] == branch_name && pr["base"]["ref"] == base
+    end)
+    case matched do
+      nil -> nil
+      map -> map["html_url"]
+    end
+  end
+
+  def auth_json_headers(username, token) do
     %{
       "authorization" => "Basic #{Base.encode64("#{username}:#{token}")}",
       "content-type"  => "application/json",
