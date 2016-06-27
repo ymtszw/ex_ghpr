@@ -45,27 +45,33 @@ defmodule ExGHPR.CLI do
   end
 
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
+    exec_with_git_repository(fn current_repo, u_n, t, lconf ->
+      current_branch = fetch_current_branch(current_repo)
+      Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
+      |> R.map_error(&exit_with_error(inspect(&1)))
+      |> R.get
+      |> puts_last_line
+      Create.ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
+      |> R.map_error(&exit_with_error(inspect(&1)))
+      |> R.get
+      |> copy_to_clipboard_and_echo
+    end)
+  end
+
+  defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
+    exit_with_error("NYI")
+  end
+
+  defun exec_with_git_repository(block :: (struct, binary, binary, map -> :ok)) :: :ok do
     cwd = File.cwd!
     current_conf = Config.ensure_cwd(cwd)
     case current_conf[cwd] do
       nil   -> exit_with_error("Not a git repository")
       lconf ->
         current_repo   = %Git.Repository{path: cwd}
-        current_branch = fetch_current_branch(current_repo)
         %{"username" => u_n, "token" => t} = current_conf["auth"][lconf["auth_user"]]
-        Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
-        |> R.map_error(&exit_with_error(inspect(&1)))
-        |> R.get
-        |> puts_last_line
-        Create.ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
-        |> R.map_error(&exit_with_error(inspect(&1)))
-        |> R.get
-        |> copy_to_clipboard_and_echo
+        block.(current_repo, u_n, t, lconf)
     end
-  end
-
-  defunp search_ghpr(_opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
-    exit_with_error("NYI")
   end
 
   for key <- @string_options do

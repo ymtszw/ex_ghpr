@@ -7,6 +7,8 @@ defmodule ExGHPR.Github do
   @github_api_host "https://api.github.com"
   @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
 
+  # Auth related
+
   @doc """
   Try authenticate to Github. Prompts for username and password. On success, returns `{username, token}`,
   where `token` is ["personal access token"](https://github.com/blog/1509-personal-api-tokens) for the user.
@@ -47,6 +49,8 @@ defmodule ExGHPR.Github do
       {:ok, %Res{status_code: c, body: raw_body}  } -> {:error, [status_code: c, body: Poison.decode!(raw_body)]}
     end
   end
+
+  # Create/List related
 
   defun pull_request_api_url(%Git.Repository{} = repo, remote :: v[String.t]) :: R.t(String.t) do
     Git.remote(repo, ["get-url", remote])
@@ -104,6 +108,8 @@ defmodule ExGHPR.Github do
       map -> map["html_url"]
     end
   end
+
+  # Search related
 
   def auth_json_headers(username, token) do
     %{
