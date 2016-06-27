@@ -71,7 +71,7 @@ defmodule ExGHPR.CLI do
             |> Croma.Result.map_error(&exit_with_error(inspect(&1)))
             |> Croma.Result.get
         end
-      fetch_remote_owner_repo(current_repo, "origin")
+      fetch_remote_owner_repo(current_repo, validate_remote(opts[:remote], "origin"))
       |> R.get
       |> Search.search_pull_requests_and_list_url(u_n, t, sha_hash)
       |> R.map_error(&exit_with_error(&1))
