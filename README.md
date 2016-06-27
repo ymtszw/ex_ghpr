@@ -84,6 +84,10 @@ This will do:
 - `$ ghpr search <sha_hash>`
     - Search Pull Request related to a SHA hash **(NYI)**
     - `-r` option also works. Useful for forked repositories
+- Options for `search`
+    - `$ ghpr search {-l|--line} <number> <file_name>`
+        - Blame specified line of the file, then search Pull Request related to the SHA hash
+        - When you specify `--line`, `file_name` must be a valid file
 
 
 ## Configuration
