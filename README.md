@@ -17,7 +17,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 
 ## Installation
 
-0. Require Git (2.7+)
+0. Require Git (1.8+)
 1. Install [Erlang](http://erlang.org/) and [Elixir](http://elixir-lang.org/)
     - Personally recommend [asdf](https://github.com/asdf-vm/asdf) with
     [asdf-erlang](https://github.com/asdf-vm/asdf-erlang)/[asdf-elixir](https://github.com/asdf-vm/asdf-elixir)
