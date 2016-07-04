@@ -1,5 +1,7 @@
 # ExGHPR
 
+[![Build Status](https://travis-ci.org/YuMatsuzawa/ex_ghpr.svg?branch=master)](https://travis-ci.org/YuMatsuzawa/ex_ghpr)
+
 `ghpr` command to work with GitHub Pull Request.
 
 Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
