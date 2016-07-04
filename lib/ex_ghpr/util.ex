@@ -5,6 +5,11 @@ defmodule ExGHPR.Util do
 
   @remote_url_pattern ~r|[/:](?<owner_repo>[^/]+/[^/]+)\.git|
 
+  defun prompt_until_pattern_match(message :: String.t, pattern :: Regex.t) :: String.t do
+    stdin = IO.gets(message)
+    if stdin =~ pattern, do: String.rstrip(stdin, ?\n), else: prompt_until_pattern_match(message, pattern)
+  end
+
   defun fetch_current_branch(%Git.Repository{} = repo) :: String.t do
     case Git.rev_parse(repo, ~w(--abbrev-ref HEAD)) do
       {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")

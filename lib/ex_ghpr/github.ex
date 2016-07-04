@@ -15,20 +15,14 @@ defmodule ExGHPR.Github do
   This token has `repo` access scope, which allows read/write to any repository visible to the user.
   The user can always revoke the token from [Github web console](https://github.com/settings/tokens).
   """
-  defun try_auth :: {String.t, String.t} do
-    username = prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+  defun try_auth(username :: v[String.t]) :: String.t do
     password = prompt_until_pattern_match("Enter your password for #{username}: ", ~r/\A[^\n]+\n\Z/)
     IO.puts "Authenticating..."
     case acquire_access_token(username, password) do
-      {:ok   , token        } -> IO.puts("OK!")                                         && {username, token}
-      {:error, :unauthorized} -> IO.puts("Username/Password doesn't match. Try again.") && try_auth
+      {:ok   , token        } -> IO.puts("OK!")                                         && token
+      {:error, :unauthorized} -> IO.puts("Username/Password doesn't match. Try again.") && try_auth(username)
       {:error, other        } -> raise "#{inspect(other)}"
     end
-  end
-
-  defunp prompt_until_pattern_match(message :: String.t, pattern :: Regex.t) :: String.t do
-    stdin = IO.gets(message)
-    if stdin =~ pattern, do: String.rstrip(stdin, ?\n), else: prompt_until_pattern_match(message, pattern)
   end
 
   defunp acquire_access_token(username :: v[String.t], password :: v[String.t]) :: R.t(String.t) do

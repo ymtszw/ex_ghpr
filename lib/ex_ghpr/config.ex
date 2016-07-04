@@ -5,15 +5,21 @@ defmodule ExGHPR.AuthConfig do
   alias ExGHPR.{Config, Github}
 
   defun init_default :: Croma.Result.t(map) do
-    {username, token} = Github.try_auth
+    username = prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+    token = Github.try_auth(username)
     Config.save_auth(%{"$default" => %{"username" => username, "token" => token}})
   end
 
   defun init_local :: String.t do
-    {username, token} = Github.try_auth
-    case Config.save_auth(%{username => %{"username" => username, "token" => token}}) do
-      {:error, reason} -> exit_with_error(inspect(reason))
-      {:ok, _}         -> username
+    username = prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+    case Config.get_auth(username) do
+      {:error, :not_found} ->
+        token = Github.try_auth(username)
+        case Config.save_auth(%{username => %{"username" => username, "token" => token}}) do
+          {:error, reason} -> exit_with_error(inspect(reason))
+          {:ok, _}         -> username
+        end
+      {:ok, _map}          -> username
     end
   end
 end
@@ -154,6 +160,14 @@ defmodule ExGHPR.Config do
     new_aconf = Map.merge(current_conf["auth"] || %{}, aconf)
     new_conf = Map.put(current_conf, "auth", new_aconf)
     save(new_conf)
+  end
+
+  defun get_auth(username :: v[String.t]) :: R.t(map) do
+    current_conf = load!
+    case Map.get(current_conf["auth"], username) do
+      nil -> {:error, :not_found}
+      map -> {:ok,    map       }
+    end
   end
 
   defunp save(conf :: v[map]) :: R.t(map) do
