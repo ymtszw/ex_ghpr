@@ -13,7 +13,7 @@ defmodule ExGHPR.Util do
   end
 
   defun fetch_remote_owner_repo(%Git.Repository{} = repo, remote :: v[String.t]) :: Croma.Result.t(String.t) do
-    Git.remote(repo, ["get-url", remote])
+    Git.ls_remote(repo, ["--get-url", remote])
     |> Croma.Result.map(fn remote_url ->
       Regex.named_captures(@remote_url_pattern, remote_url) # Should rarely fail
       |> Map.get("owner_repo")
