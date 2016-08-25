@@ -1,6 +1,6 @@
 # ExGHPR
 
-[![Build Status](https://travis-ci.org/YuMatsuzawa/ex_ghpr.svg?branch=master)](https://travis-ci.org/YuMatsuzawa/ex_ghpr)
+[![Build Status](https://travis-ci.org/ymtszw/ex_ghpr.svg?branch=master)](https://travis-ci.org/ymtszw/ex_ghpr)
 
 `ghpr` command to work with GitHub Pull Request.
 
