@@ -45,6 +45,7 @@ This will do:
 
 - Push your current branch to your `origin` repository
     - Just calling system's `git` command
+    - That means, you should name a repository from which you send PR, as `origin`
 - Open Pull Request of the branch to the repository
     - Remote, base, title, description, fork user can be set with options
     - See bellow for default behaviors
