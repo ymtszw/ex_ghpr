@@ -27,7 +27,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - self building
         - Commands:
         ```
-        $ git clone https://github.com/YuMatsuzawa/ex_ghpr
+        $ git clone https://github.com/ymtszw/ex_ghpr
         $ cd ex_ghpr
         $ mix deps.get
         $ mix escript.build
@@ -35,7 +35,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var
             - This will be the default escript installation path coming in Elixir 1.3
-    - downloading compiled binary from [here](https://github.com/YuMatsuzawa/ex_ghpr/releases/latest)
+    - downloading compiled binary from [here](https://github.com/ymtszw/ex_ghpr/releases/latest)
 
 ## Usage
 
