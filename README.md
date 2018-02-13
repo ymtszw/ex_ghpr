@@ -76,8 +76,9 @@ This will do:
         - In API call, `head` parameter will become `<username>:<current_branch>`
         - Obviously, you need to fork the original repository first,
         if you are not authorized to push to it
-    - `$ ghpr {-c|--configure} {local|global}`
-        - Re-configuration
+    - `$ ghpr {-c|--configure} {local|global|auth}`
+        - Re-configuration.
+        - To re-authenticate, use `auth` for a non-default user, and `global` for the default user.
 - `$ ghpr search <sha_hash>`
     - Search Pull Request related to a SHA hash, then open it in your browser
     - If no Pull Request found for that commit hash, nothing happens

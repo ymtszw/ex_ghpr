@@ -7,13 +7,13 @@ defmodule ExGHPR.Util do
 
   defun prompt_until_pattern_match(message :: String.t, pattern :: Regex.t) :: String.t do
     stdin = IO.gets(message)
-    if stdin =~ pattern, do: String.rstrip(stdin, ?\n), else: prompt_until_pattern_match(message, pattern)
+    if stdin =~ pattern, do: String.trim_trailing(stdin), else: prompt_until_pattern_match(message, pattern)
   end
 
   defun fetch_current_branch(%Git.Repository{} = repo) :: String.t do
     case Git.rev_parse(repo, ~w(--abbrev-ref HEAD)) do
       {:ok, "HEAD\n"} -> exit_with_error("Cannot open PR from detached HEAD")
-      {:ok, name    } -> String.rstrip(name, ?\n)
+      {:ok, name    } -> String.trim_trailing(name)
     end
   end
 
@@ -27,18 +27,9 @@ defmodule ExGHPR.Util do
 
   defun puts_last_line(str :: v[String.t]) :: :ok do
     String.split(str, "\n", trim: true)
-    |> Enum.reverse
-    |> hd
-    |> IO.puts
-  end
-
-  def   open_url(""), do: ""
-  defun open_url(url :: v[String.t]) :: String.t do
-    open_cmd =
-      System.find_executable("open") ||                 # OSX
-      (System.find_executable("cmd") && "cmd /c start") # Windows
-    if open_cmd, do: :os.cmd('#{open_cmd} #{url}')
-    url
+    |> Enum.reverse()
+    |> hd()
+    |> IO.puts()
   end
 
   defun copy_to_clipboard_and_echo(str :: v[String.t]) :: :ok do
