@@ -9,6 +9,7 @@ defmodule ExGHPR.Mixfile do
       app: :ex_ghpr,
       version: "0.3.0",
       elixir: "~> 1.5",
+      elixirc_options: [warnings_as_errors: true],
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       escript: [
@@ -21,6 +22,7 @@ defmodule ExGHPR.Mixfile do
         {:httpoison,      "~> 0.8"              },
         {:croma,          "~> 0.4"              },
         {:mix_test_watch, "~> 0.2", [only: :dev]},
+        {:credo,          "~> 0.8", [only: :dev]},
       ],
       source_url: @github_url,
       package: [
