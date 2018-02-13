@@ -1,3 +1,4 @@
+sudo: false
 language: elixir
 elixir:
   - 1.4.5
@@ -6,6 +7,10 @@ otp_release:
   - 18.3
   - 19.0
   - 20.0
+cache:
+  directories:
+    - _build
+    - deps
 notifications:
   email:
     on_failure: always
