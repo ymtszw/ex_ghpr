@@ -7,6 +7,7 @@ defmodule ExGHPR.Mixfile do
   def project() do
     [
       app: :ex_ghpr,
+      description: "CLI to work with GitHub Pull Request",
       version: "0.3.0",
       elixir: "~> 1.4",
       elixirc_options: [warnings_as_errors: true],
