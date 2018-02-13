@@ -31,6 +31,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         ```
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var (default escript installation path from Elixir 1.3)
+        - To uninstall, `mix escript.uninstall ghpr` (notice the command name, not repository name)
     - downloading compiled binary from [here](https://github.com/ymtszw/ex_ghpr/releases/latest)
 
 ## Usage
