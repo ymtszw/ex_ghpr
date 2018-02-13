@@ -1,5 +1,6 @@
 # ExGHPR
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_ghpr.svg)](https://hex.pm/packages/ex_ghpr)
 [![Build Status](https://travis-ci.org/ymtszw/ex_ghpr.svg?branch=master)](https://travis-ci.org/ymtszw/ex_ghpr)
 
 `ghpr` command to work with GitHub Pull Request.
