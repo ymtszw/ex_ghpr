@@ -24,7 +24,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - If you install via compiled binary, the only dependency is Erlang
     - If you want to build by yourself, Elixir and `mix` required
 2. Install by either:
-    - `mix`
+    - `mix` (Elixir 1.3+)
         - Commands:
         ```
         $ mix escript.install hex ex_ghpr
@@ -32,6 +32,17 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
         - Installed binary should be `~/.mix/escripts/ghpr`
         - Add `~/.mix/escripts` to your `PATH` env var (default escript installation path from Elixir 1.3)
         - To uninstall, `mix escript.uninstall ghpr` (notice the command name, not repository name)
+    - `mix` (Elixir 1.2 or older)
+        - Commands:
+        ```
+        $ git clone https://github.com/ymtszw/ex_ghpr
+        $ cd ex_ghpr
+        $ mix deps.get
+        $ mix escript.build
+        ```
+        - Installed binary should be `~/.mix/escripts/ghpr`
+        - Add `~/.mix/escripts` to your `PATH` env var (default escript installation path from Elixir 1.3)
+        - To uninstall, just remove `ghpr` binary
     - downloading compiled binary from [here](https://github.com/ymtszw/ex_ghpr/releases/latest)
 
 ## Usage
