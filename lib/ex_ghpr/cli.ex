@@ -48,9 +48,17 @@ defmodule ExGHPR.CLI do
   end
 
   defunp configure_ghpr(switch :: term) :: R.t(map) do
-    "local"  -> LConf.init(File.cwd!())
-    "global" -> Config.init()
-    _other   -> Util.exit_with_error("$ #{Config.cmd_name()} --configure {local|global}")
+    "local" ->
+      case Config.load() do
+        {:ok, current_conf} ->
+          LConf.init(File.cwd!(), current_conf)
+        _otherwise ->
+          Config.init()
+      end
+    "global" ->
+      Config.init()
+    _other ->
+      Util.exit_with_error("$ #{Config.cmd_name()} --configure {local|global}")
   end
 
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
@@ -93,12 +101,13 @@ defmodule ExGHPR.CLI do
   end
 
   defun exec_with_git_repository(block :: (struct, binary, binary, map -> :ok)) :: :ok do
-    cwd = File.cwd!
+    cwd = File.cwd!()
     current_conf = Config.ensure_cwd(cwd)
     case current_conf[cwd] do
-      nil   -> Util.exit_with_error("Not a git repository")
+      nil ->
+        Util.exit_with_error("Not a git repository")
       lconf ->
-        current_repo   = %Git.Repository{path: cwd}
+        current_repo = %Git.Repository{path: cwd}
         %{"username" => u_n, "token" => t} = current_conf["auth"][lconf["auth_user"]]
         block.(current_repo, u_n, t, lconf)
     end

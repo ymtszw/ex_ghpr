@@ -1,25 +1,26 @@
 use Croma
 
 defmodule ExGHPR.AuthConfig do
-  import ExGHPR.Util
+  alias ExGHPR.Util
   alias ExGHPR.{Config, Github}
 
-  defun init_default() :: Croma.Result.t(map) do
-    username = prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+  defun init_default(current_conf :: v[map]) :: Croma.Result.t(map) do
+    username = Util.prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
     token = Github.try_auth(username)
-    Config.save_auth(%{"$default" => %{"username" => username, "token" => token}})
+    Config.save_auth(%{"$default" => %{"username" => username, "token" => token}}, current_conf)
   end
 
-  defun init_local() :: String.t do
-    username = prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
-    case Config.get_auth(username) do
+  defun init_local(current_conf :: v[map]) :: String.t do
+    username = Util.prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+    case Config.get_auth(current_conf, username) do
       {:error, :not_found} ->
         token = Github.try_auth(username)
-        case Config.save_auth(%{username => %{"username" => username, "token" => token}}) do
-          {:error, reason} -> exit_with_error(inspect(reason))
+        case Config.save_auth(%{username => %{"username" => username, "token" => token}}, current_conf) do
+          {:error, reason} -> Util.exit_with_error(inspect(reason))
           {:ok, _}         -> username
         end
-      {:ok, _map}          -> username
+      {:ok, _map} ->
+        username
     end
   end
 end
@@ -33,17 +34,21 @@ defmodule ExGHPR.LocalConfig do
   alias ExGHPR.{Config, AuthConfig}
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
-  defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
+  defun init(cwd :: v[LPath.t], current_conf :: v[map]) :: Croma.Result.t(map) do
     IO.puts "Configuring git repository: #{cwd}"
-    yn = IO.gets("Use default user? [Y/N]: ") |> String.trim_trailing() |> String.downcase()
+    {:ok, %{"username" => default_username}} = Config.get_auth(current_conf, "$default")
+    yn =
+      IO.gets("Use default user? (#{default_username}) [Y/N]: ")
+      |> String.trim_trailing()
+      |> String.downcase()
     auth =
       case yn do
         "y" -> "$default"
-        "n" -> AuthConfig.init_local
-        _   -> init(cwd)
+        "n" -> AuthConfig.init_local(current_conf)
+        _   -> init(cwd, current_conf)
       end
     tu = prompt_tracker_url()
-    Config.save_local_conf(%{cwd => %{"auth_user" => auth, "tracker_url" => tu}})
+    Config.save_local_conf(%{cwd => %{"auth_user" => auth, "tracker_url" => tu}}, current_conf)
   end
 
   defunp prompt_tracker_url() :: nil | String.t do
@@ -118,9 +123,9 @@ defmodule ExGHPR.Config do
 
   defun init() :: R.t(map) do
     IO.puts "#{@cmd_name} - #{@cmd_version}"
-    AuthConfig.init_default()
+    AuthConfig.init_default(%{})
     |> R.map(fn conf ->
-      init_lconf_or_nil(File.cwd!) || conf
+      init_lconf_or_nil(File.cwd!(), conf) || conf
     end)
   end
 
@@ -129,7 +134,7 @@ defmodule ExGHPR.Config do
     |> R.bind(&Poison.decode/1)
   end
 
-  defunp load!() :: map do
+  defun load!() :: map do
     case load() do
       {:error, _   } -> %{}
       {:ok, current} -> current
@@ -140,31 +145,28 @@ defmodule ExGHPR.Config do
     case load() do
       {:error, _}                -> init() |> R.get()
       {:ok, %{^cwd => _} = conf} -> conf
-      {:ok, conf}                -> init_lconf_or_nil(cwd) || conf
+      {:ok, conf}                -> init_lconf_or_nil(cwd, conf) || conf
     end
   end
 
-  defunp init_lconf_or_nil(cwd :: Path.t) :: nil | map do
+  defunp init_lconf_or_nil(cwd :: Path.t, current_conf :: map) :: nil | map do
     case LPath.validate(cwd) do
-      {:ok, repo} -> LocalConfig.init(repo) |> R.get()
+      {:ok, repo} -> LocalConfig.init(repo, current_conf) |> R.get()
       {:error, _} -> nil
     end
   end
 
-  defun save_local_conf(lconf :: v[map]) :: R.t(map) do
-    new_conf = load!() |> Map.merge(lconf)
-    save(new_conf)
+  defun save_local_conf(lconf :: v[map], current_conf :: v[map]) :: R.t(map) do
+    save(Map.merge(current_conf, lconf))
   end
 
-  defun save_auth(aconf :: v[map]) :: R.t(map) do
-    current_conf = load!()
+  defun save_auth(aconf :: v[map], current_conf :: v[map]) :: R.t(map) do
     new_aconf = Map.merge(current_conf["auth"] || %{}, aconf)
     new_conf = Map.put(current_conf, "auth", new_aconf)
     save(new_conf)
   end
 
-  defun get_auth(username :: v[String.t]) :: R.t(map) do
-    current_conf = load!()
+  defun get_auth(current_conf :: v[map], username :: v[String.t]) :: R.t(map) do
     case Map.get(current_conf["auth"], username) do
       nil -> {:error, :not_found}
       map -> {:ok,    map       }
