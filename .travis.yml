@@ -4,7 +4,6 @@ elixir:
   - 1.4.5
   - 1.5.3
 otp_release:
-  - 18.3
   - 19.0
   - 20.0
 cache:
