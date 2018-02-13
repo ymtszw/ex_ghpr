@@ -35,7 +35,7 @@ defmodule ExGHPR.LocalConfig do
 
   defun init(cwd :: v[LPath.t]) :: Croma.Result.t(map) do
     IO.puts "Configuring git repository: #{cwd}"
-    yn = IO.gets("Use default user? [Y/N]: ") |> String.trim_trailing(?\n) |> String.downcase()
+    yn = IO.gets("Use default user? [Y/N]: ") |> String.trim_trailing() |> String.downcase()
     auth =
       case yn do
         "y" -> "$default"
@@ -48,7 +48,7 @@ defmodule ExGHPR.LocalConfig do
 
   defunp prompt_tracker_url() :: nil | String.t do
     tracker_url = IO.gets("(Optional) Enter issue tracker url (e.g. https://github.com/YuMatsuzawa/ex_ghpr/issues): ")
-    case String.trim_trailing(tracker_url, ?\n) do
+    case String.trim_trailing(tracker_url) do
       ""  -> nil
       url ->
         case validate_tracker_url(url) do
