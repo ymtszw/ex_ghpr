@@ -7,28 +7,12 @@ defmodule ExGHPR.CLI.Create do
   alias Croma.Result, as: R
   alias ExGHPR.Github
 
-  @ssh_url_pattern ~r|:(?<owner_repo>\S+/\S+.git)\n?\Z|
-
-  defun ensure_current_branch_pushed_to_origin(%Git.Repository{} = repo,
-                                               current_branch :: v[String.t],
-                                               username       :: v[String.t],
-                                               token          :: v[String.t]) :: R.t(term) do
-    origin_url = case Git.remote(repo, ["get-url", "origin"]) do
-      {:error, _  } -> Util.exit_with_error("Cannot find `origin` remote")
-      {:ok   , url} -> url
-    end
-    origin_url_with_auth = case URI.parse(origin_url) do
-      %URI{scheme: "https", host: "github.com", path: path} ->
-        "https://#{username}:#{token}@github.com#{String.trim_trailing(path, ?\n)}"
-      _ssh_url -> ssh_to_https(origin_url, username, token)
-    end
-    Git.push(repo, [origin_url_with_auth, current_branch])
-  end
-
-  defunp ssh_to_https(ssh_url :: v[String.t], username :: v[String.t], token :: v[String.t]) :: String.t do
-    case Regex.named_captures(@ssh_url_pattern, ssh_url) do
-      %{"owner_repo" => o_r} -> "https://#{username}:#{token}@github.com/#{String.trim_trailing(o_r, ?\n)}"
-      nil                    -> Util.exit_with_error("Remote URL does not match with `git@github.com:<owner>/<repo>.git`!")
+  defun ensure_current_branch_pushed_to_origin(%Git.Repository{} = repo, current_branch :: v[String.t]) :: R.t(term) do
+    case Git.remote(repo, ["get-url", "origin"]) do
+      {:error, _} ->
+        Util.exit_with_error("Cannot find `origin` remote")
+      {:ok, _url} ->
+        Git.push(repo, ["--set-upstream", "origin", current_branch])
     end
   end
 

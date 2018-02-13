@@ -56,7 +56,7 @@ defmodule ExGHPR.CLI do
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
     exec_with_git_repository(fn current_repo, u_n, t, lconf ->
       current_branch = Util.fetch_current_branch(current_repo)
-      Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch, u_n, t)
+      Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch)
       |> R.map_error(&Util.exit_with_error(inspect(&1)))
       |> R.get()
       |> Util.puts_last_line()
