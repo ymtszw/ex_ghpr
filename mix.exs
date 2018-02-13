@@ -8,7 +8,7 @@ defmodule ExGHPR.Mixfile do
     [
       app: :ex_ghpr,
       version: "0.3.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.2",
       elixirc_options: [warnings_as_errors: true],
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
