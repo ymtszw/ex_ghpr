@@ -1,13 +1,17 @@
 use Croma
 
 defmodule ExGHPR.Github do
-  import ExGHPR.Util
+  alias ExGHPR.Util
   alias Croma.Result, as: R
   alias HTTPoison.Response, as: Res
 
   @github_api_host "https://api.github.com"
 
   # Auth related
+
+  defun prompt_username() :: String.t do
+    Util.prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+  end
 
   @doc """
   Try authenticate to Github. Prompts for username and password. On success, returns `{username, token}`,
@@ -16,7 +20,7 @@ defmodule ExGHPR.Github do
   The user can always revoke the token from [Github web console](https://github.com/settings/tokens).
   """
   defun try_auth(username :: v[String.t]) :: String.t do
-    password = prompt_until_pattern_match("Enter your password for #{username}: ", ~r/\A[^\n]+\n\Z/)
+    password = Util.prompt_until_pattern_match("Enter your password for #{username}: ", ~r/\A[^\n]+\n\Z/)
     IO.puts "Authenticating..."
     case acquire_access_token(username, password) do
       {:ok   , token        } -> IO.puts("OK!")                                         && token
@@ -47,7 +51,7 @@ defmodule ExGHPR.Github do
   # Create/List related
 
   defun pull_request_api_url(%Git.Repository{} = repo, remote :: v[String.t]) :: R.t(String.t) do
-    fetch_remote_owner_repo(repo, remote)
+    Util.fetch_remote_owner_repo(repo, remote)
     |> R.map(fn o_r -> "#{@github_api_host}/repos/#{o_r}/pulls" end)
   end
 

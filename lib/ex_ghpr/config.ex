@@ -5,23 +5,27 @@ defmodule ExGHPR.AuthConfig do
   alias ExGHPR.{Config, Github}
 
   defun init_default(current_conf :: v[map]) :: Croma.Result.t(map) do
-    username = Util.prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
-    token = Github.try_auth(username)
-    Config.save_auth(%{"$default" => %{"username" => username, "token" => token}}, current_conf)
+    username = Github.prompt_username()
+    authenticate_user(current_conf, username, true)
   end
 
   defun init_local(current_conf :: v[map]) :: String.t do
-    username = Util.prompt_until_pattern_match("Enter your Github username: ", ~r/\A\S+\n\Z/)
+    username = Github.prompt_username()
     case Config.get_auth(current_conf, username) do
       {:error, :not_found} ->
-        token = Github.try_auth(username)
-        case Config.save_auth(%{username => %{"username" => username, "token" => token}}, current_conf) do
+        case authenticate_user(current_conf, username, false) do
           {:error, reason} -> Util.exit_with_error(inspect(reason))
           {:ok, _}         -> username
         end
       {:ok, _map} ->
         username
     end
+  end
+
+  defun authenticate_user(current_conf :: v[map], username :: v[String.t], default? :: v[boolean] \\ false) :: Croma.Result.t(map) do
+    token = Github.try_auth(username)
+    entry = if default?, do: "$default", else: username
+    Config.save_auth(%{entry => %{"username" => username, "token" => token}}, current_conf)
   end
 end
 
@@ -35,7 +39,7 @@ defmodule ExGHPR.LocalConfig do
   alias ExGHPR.LocalGitRepositoryPath, as: LPath
 
   defun init(cwd :: v[LPath.t], current_conf :: v[map]) :: Croma.Result.t(map) do
-    IO.puts "Configuring git repository: #{cwd}"
+    IO.puts("Configuring git repository: #{cwd}")
     {:ok, %{"username" => default_username}} = Config.get_auth(current_conf, "$default")
     yn =
       IO.gets("Use default user? (#{default_username}) [Y/N]: ")

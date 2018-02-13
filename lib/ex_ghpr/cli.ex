@@ -3,7 +3,7 @@ use Croma
 defmodule ExGHPR.CLI do
   alias ExGHPR.Util
   alias Croma.Result, as: R
-  alias ExGHPR.Config
+  alias ExGHPR.{AuthConfig, Config, Github}
   alias ExGHPR.LocalConfig, as: LConf
   alias ExGHPR.CLI.{Create, Search}
 
@@ -57,15 +57,25 @@ defmodule ExGHPR.CLI do
       end
     "global" ->
       Config.init()
+    "auth" ->
+      case Config.load() do
+        {:ok, current_conf} ->
+          AuthConfig.authenticate_user(current_conf, Github.prompt_username(), false)
+        _otherwise ->
+          Config.init()
+      end
     _other ->
-      Util.exit_with_error("$ #{Config.cmd_name()} --configure {local|global}")
+      Util.exit_with_error("$ #{Config.cmd_name()} --configure {local|global|auth}")
   end
 
   defunp create_ghpr(opts :: Keyword.t, _args :: [term]) :: :ok | {:error, term} do
     exec_with_git_repository(fn current_repo, u_n, t, lconf ->
       current_branch = Util.fetch_current_branch(current_repo)
       Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch)
-      |> R.map_error(&Util.exit_with_error(inspect(&1)))
+      |> R.map_error(fn error ->
+        help_on_push_error()
+        Util.exit_with_error(inspect(error))
+      end)
       |> R.get()
       |> Util.puts_last_line()
 
@@ -74,6 +84,21 @@ defmodule ExGHPR.CLI do
       |> R.get()
       |> Util.copy_to_clipboard_and_echo()
     end)
+  end
+
+  defp help_on_push_error() do
+    IO.puts("""
+    Experiencing error on pushing to remote?
+    Git will resolve your identity via several ways, described in `man gitcredentials`.
+
+    Potential fix could be:
+
+    * push without `ghpr` once, and let your credential helper to remenber the credential
+        * Set credential helper beforhand, if not yet
+    * use `ssh` URL with publickey authentication (if the key is protected by passphrase,
+      you still need your credential helper to work if you want to bypass prompt)
+    * hard code your username and password in remote URL like 'https://username:password@host/path/to/git'
+    """)
   end
 
   defunp search_ghpr(opts :: Keyword.t, args :: [term]) :: :ok | {:error, term} do
