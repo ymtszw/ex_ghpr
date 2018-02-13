@@ -10,7 +10,7 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
 
 - Open Pull Request
     - Automatically push, put title, write issue URL in description
-    - Also, copy resultant Pull Request URL to clipboard, open issue URL in browser
+    - Also, copy resultant Pull Request URL to clipboard
     - You can configure issue tracker URL and identities **per repository**
         - This is my original intension for this tool over `hub`!
 - Search Pull Requests related to a SHA hash or file name
@@ -24,17 +24,13 @@ Inspired by [github/hub](https://github.com/github/hub) CLI. Written in Elixir.
     - If you install via compiled binary, the only dependency is Erlang
     - If you want to build by yourself, Elixir and `mix` required
 2. Install by either:
-    - self building
+    - `mix`
         - Commands:
         ```
-        $ git clone https://github.com/ymtszw/ex_ghpr
-        $ cd ex_ghpr
-        $ mix deps.get
-        $ mix escript.build
+        $ mix escript.install hex ex_ghpr
         ```
         - Installed binary should be `~/.mix/escripts/ghpr`
-        - Add `~/.mix/escripts` to your `PATH` env var
-            - This will be the default escript installation path coming in Elixir 1.3
+        - Add `~/.mix/escripts` to your `PATH` env var (default escript installation path from Elixir 1.3)
     - downloading compiled binary from [here](https://github.com/ymtszw/ex_ghpr/releases/latest)
 
 ## Usage
@@ -46,14 +42,12 @@ This will do:
 - Push your current branch to your `origin` repository
     - Just calling system's `git` command
     - That means, you should name a repository from which you send PR, as `origin`
+    - Implicitly sets upstream by `--set-upstream` option on push
 - Open Pull Request of the branch to the repository
     - Remote, base, title, description, fork user can be set with options
-    - See bellow for default behaviors
+    - See below for default behaviors
 - `pbcopy` (OSX) or `clip` (Windows) the resultant Pull Request URL
     - If neither exist, just print the URL
-- `open` (OSX) or `cmd /c start` (Windows) the issue URL
-    - If the issue tracker is Github issue, Pull Request auto-link should already be there
-    - Otherwise, it is good practice to post your Pull Request URL to the issue!
 
 ### Sub-commands and options
 
@@ -111,11 +105,6 @@ This will do:
 - Configurations and tokens will be stored in `~/.config/ghpr` as JSON format
 - Configurations are held per local repository
 
-## To Do
+## License
 
-- Test more
-    - Including Windows support
-- Automatically create fork if the user is not authorized to push to the target repository
-- Post resultant Pull Request URL to other issue trackers like Redmine/JIRA, via API
-    - Obviously, storing issue tracker type and API credentials is required
-- Support Multi Factor Authentication
+BSD-3-Clause
