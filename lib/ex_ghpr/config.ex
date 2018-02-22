@@ -80,12 +80,11 @@ end
 defmodule ExGHPR.LocalGitRepositoryPath do
   @type t :: Path.t
 
-  defun validate(term :: term) :: Croma.Result.t(t) do
-    if File.dir?(Path.join(term, ".git")) do
-      {:ok, term}
-    else
-      {:error, {:invalid_value, [__MODULE__]}}
-    end
+  defun valid?(term :: term) :: boolean do
+    str when is_binary(str) ->
+      File.dir?(Path.join(str, ".git"))
+    _otherwise ->
+      false
   end
 end
 
@@ -154,7 +153,7 @@ defmodule ExGHPR.Config do
   end
 
   defunp init_lconf_or_nil(cwd :: Path.t, current_conf :: map) :: nil | map do
-    case LPath.validate(cwd) do
+    case R.wrap_if_valid(cwd, LPath) do
       {:ok, repo} -> LocalConfig.init(repo, current_conf) |> R.get()
       {:error, _} -> nil
     end
