@@ -8,7 +8,7 @@ defmodule ExGHPR.Mixfile do
     [
       app: :ex_ghpr,
       description: "CLI to work with GitHub Pull Request",
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.4",
       elixirc_options: [warnings_as_errors: true],
       build_embedded: Mix.env == :prod,
