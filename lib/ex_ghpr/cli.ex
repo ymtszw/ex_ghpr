@@ -72,12 +72,10 @@ defmodule ExGHPR.CLI do
     exec_with_git_repository(fn current_repo, u_n, t, lconf ->
       current_branch = Util.fetch_current_branch(current_repo)
       Create.ensure_current_branch_pushed_to_origin(current_repo, current_branch)
-      |> R.map_error(fn error ->
+      |> R.map_error(fn {:push_failure, status} ->
         help_on_push_error()
-        Util.exit_with_error(inspect(error))
+        Util.exit_with_error("git-push failed with exit status: #{status}")
       end)
-      |> R.get()
-      |> Util.puts_last_line()
 
       Create.ensure_pull_requested(opts, current_repo, current_branch, u_n, t, lconf["tracker_url"])
       |> R.map_error(&Util.exit_with_error(inspect(&1)))

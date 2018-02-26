@@ -12,7 +12,11 @@ defmodule ExGHPR.CLI.Create do
       {:error, _} ->
         Util.exit_with_error("Cannot find `origin` remote")
       {:ok, _url} ->
-        Git.push(repo, ["--set-upstream", "origin", current_branch])
+        # Use System.cmd/3 here in order to print intermediate stdout line-by-line.
+        case System.cmd("git", ["push", "--set-upstream", "origin", current_branch], [stderr_to_stdout: true, into: IO.stream(:stdio, :line)]) do
+          {_io_stream, 0} -> {:ok, :push_success}
+          {_io_stream, e} -> {:error, {:push_failure, e}}
+        end
     end
   end
 
